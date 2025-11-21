@@ -81,6 +81,3 @@ Legacy and 5.0 compositor systems cannot be used in the same project.
 The Legacy Compositor System may not fully function in all its features in version 5.0 or higher. It is recommended to use the 5.0 system with the latest update.
 
 The future update will no longer cover the legacy compositor system.
-
-# Compatibility
-Layer Comp is compatible with older Blender versions, starting from Blender 4.2. But the best use of the addon is version 4.5, some features and nodes aren't available in 4.4 or below.
