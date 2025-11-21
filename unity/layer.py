@@ -6,6 +6,7 @@ from .effect import *
 from .matte import *
 from .mask import *
 from .node_data import *
+from bpy_extras.io_utils import ImportHelper
 
 class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 	def get_name(self):
@@ -17,9 +18,8 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 
 		# Define props
 		context = bpy.context
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		# Check existing layer
@@ -192,17 +192,17 @@ class LAYER_UL_LIST(bpy.types.UIList):
 		if self.layout_type in {'DEFAULT'}:
 			tree = get_scene_tree(context)
 			props = context.scene.compositor_layer_props
-			node_group = tree.nodes[props.compositor_panel].node_tree
+			node_group = bpy.data.node_groups[props.compositor_panel]
 			compositor = node_group.compositor_props
 			addon_prefs = get_addon_preference(context)
 
-			group_node = tree.nodes[compositor.name]
 			mix_node = node_group.nodes.get(f"{item.name}.Mix")
 			sub_mix_node = node_group.nodes.get(f"{item.name}.Mix_Sub")
 
 			active = True
 
 			if item.type == "Source":
+				group_node = tree.nodes[compositor.name]
 				if item.socket:
 					input = f'{item.source}({item.socket})'
 				else:
@@ -258,7 +258,8 @@ class LAYER_UL_LIST(bpy.types.UIList):
 
 			sub = xrow.row(align=True)
 			if addon_prefs.label:
-				sub.label(text = "", icon = "CURRENT_FILE" if item.type not in ["Source", "Adjustment"] else "BLANK1")
+				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+					sub.label(text = "", icon = "CURRENT_FILE" if item.type not in ["Source", "Adjustment"] else "BLANK1")
 				if item.matte != "None":
 					sub.label(text = "", icon = "IMAGE_ZDEPTH")
 				elif item.is_matte:
@@ -287,7 +288,7 @@ class LAYER_UL_LIST(bpy.types.UIList):
 
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		filtered = []
@@ -324,7 +325,7 @@ class Add_OT_Layer(bpy.types.Operator):
 		# Define props
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		# Check existing nodes
@@ -336,8 +337,7 @@ class Add_OT_Layer(bpy.types.Operator):
 
 		# Define nodes
 		node_group = bpy.data.node_groups[compositor.name]
-		group_node = tree.nodes[compositor.name]
-
+		
 		# Define node group nodes
 		GroupInput = node_group.nodes.get("Group Input")
 		GroupOutput = node_group.nodes.get("Group Output")
@@ -365,12 +365,18 @@ class Add_OT_Layer(bpy.types.Operator):
 		sub_mix_node.parent = frame
 
 		# Create Transform node
-		__transform = bpy.data.node_groups.get(".*Transform")
-		if not __transform:
-			__transform = create_transform_node_group()
+		if bpy.app.version >= (5, 0, 0):
+			transform_node = append_node('Presets', ".*Transform", 'v5_0', node_group.nodes)
+		else:
+			__transform = bpy.data.node_groups.get(".*Transform")
 
-		transform_node = node_group.nodes.new("CompositorNodeGroup")
-		transform_node.node_tree = __transform
+			if not __transform:
+				__transform = create_transform_node_group()
+
+			transform_node = node_group.nodes.new("CompositorNodeGroup")
+			transform_node.node_tree = __transform
+
+			
 		transform_node.name = f"{source_name}.Transform"
 		transform_node.parent = frame
 
@@ -381,6 +387,8 @@ class Add_OT_Layer(bpy.types.Operator):
 		node_group.links.new(mix_node.inputs[0], get_mix_node_outputs(sub_mix_node))
 
 		if self.type == "Source":
+			group_node = tree.nodes[compositor.name]
+			
 			GroupInput = node_group.nodes.new("NodeGroupInput")
 			GroupInput.name = f"{source_name}.GroupInput"
 			GroupInput.parent = frame
@@ -555,6 +563,66 @@ class Add_OT_Layer_From_Node(bpy.types.Operator):
 
 		return {"FINISHED"}
 
+class Add_OT_Layer_Media(bpy.types.Operator, ImportHelper):
+	bl_idname = "scene.comp_add_layer_media"
+	bl_label = "Add Media"
+	bl_description = "Add Media"
+	bl_options = {'REGISTER', 'UNDO'}
+	
+	filename_ext = '.bmp, .tiff, .png, .jpg, .jpeg, .webm, .gif, .mp4, .avi'  # List of acceptable image file extensions
+	
+	filter_glob: bpy.props.StringProperty(
+		default='*.bmp;*.tiff;*.png;*.jpg;*.jpeg;*.webm;*.gif;*.mp4;*.avi',  # Update the default filter to include multiple image types
+		options={'HIDDEN'}
+	)
+
+	directory: bpy.props.StringProperty(
+			subtype='DIR_PATH',
+	)
+	
+	files: bpy.props.CollectionProperty(
+			type=bpy.types.OperatorFileListElement,
+	)
+
+	def execute(self, context):
+		props = context.scene.compositor_layer_props
+		node_group = bpy.data.node_groups[props.compositor_panel]
+
+		directory = self.directory
+		
+		for file_elem in self.files:
+			file_path = os.path.join(directory, file_elem.name)
+
+			file_extension = os.path.splitext(file_path)[1]
+
+			if file_extension in {'.mp4'}:
+				if bpy.data.movieclips.get(file_elem.name):
+					movieclips =  bpy.data.movieclips[file_elem.name]
+				else:
+					movieclips = bpy.data.movieclips.load(file_path)
+
+				bpy.ops.scene.comp_add_layer(name=movieclips.name, icon="MOVIECLIP", type="CompositorNodeMovieClip")
+
+				movieclips.use_fake_user = True
+
+				node = node_group.nodes.get(movieclips.name)
+				node.clip = movieclips
+
+			else:
+				if bpy.data.images.get(file_elem.name):
+					image =  bpy.data.images[file_elem.name]
+				else:
+					image = bpy.data.images.load(file_path)
+
+				bpy.ops.scene.comp_add_layer(name=image.name, icon="IMAGE", type="CompositorNodeImage")
+
+				image.use_fake_user = True
+
+				node = node_group.nodes.get(image.name)
+				node.image = image
+
+		return {'FINISHED'}
+
 class Remove_OT_Layer(bpy.types.Operator):
 	bl_idname = "scene.comp_remove_layer"
 	bl_label = "Remove Compositor Layer"
@@ -567,7 +635,7 @@ class Remove_OT_Layer(bpy.types.Operator):
 		# Define props
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[self.index]
 
@@ -744,10 +812,14 @@ class Copy_OT_Layer(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def compositor_item(self, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		list = []
 		for i, name in enumerate(get_scene_compositor(context)):
-			node_group = tree.nodes[name].node_tree
+			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+				node_group = bpy.data.node_groups[name]
+			else:
+				node_group = tree.nodes[name].node_tree
 			compositor = node_group.compositor_props
 			if compositor.layer:
 				list.append((name, name, ''))
@@ -755,7 +827,11 @@ class Copy_OT_Layer(bpy.types.Operator):
 	
 	def layer_item(self, context):
 		tree = get_scene_tree(context)
-		node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			node_group = bpy.data.node_groups[self.compositor]
+		else:
+			node_group = tree.nodes[self.compositor].node_tree
 		compositor = node_group.compositor_props
 		list = []
 		if bpy.app.version >= (4, 4, 0):
@@ -787,11 +863,16 @@ class Copy_OT_Layer(bpy.types.Operator):
 		
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
+		addon_prefs = get_addon_preference(context)
 
-		copy_node_group = tree.nodes[self.compositor].node_tree
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			copy_node_group = bpy.data.node_groups[self.compositor]
+		else:
+			copy_node_group = tree.nodes[self.compositor].node_tree
+
 		copy_compositor = copy_node_group.compositor_props
 		
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		if self.layer != 'All':
@@ -907,7 +988,7 @@ class Move_OT_Layer(bpy.types.Operator):
 		tree = get_scene_tree(context)
 		props = tree.compositor_props
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[self.index]
 
@@ -1072,7 +1153,7 @@ class Drag_OT_Layer(bpy.types.Operator):
 	def modal(self, context, event):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[self.index]
 
@@ -1109,7 +1190,7 @@ class Drag_OT_Layer(bpy.types.Operator):
 	def invoke(self, context, event):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[self.index]
 		layer.drag = True
@@ -1129,6 +1210,7 @@ class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
+		addon_prefs = get_addon_preference(context)
 		layout = self.layout
 		if layout.operator_context == 'EXEC_REGION_WIN':
 			layout.operator_context = 'INVOKE_REGION_WIN'
@@ -1137,12 +1219,16 @@ class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 			layout.separator()
 
 		layout.operator_context = 'EXEC_REGION_WIN'
-		layout.menu("COMPOSITOR_MT_add_source_layer", icon = "CURRENT_FILE")
+		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+			layout.menu("COMPOSITOR_MT_add_source_layer", icon = "CURRENT_FILE")
+		else:
+			layout.menu("COMPOSITOR_MT_add_comp_layer", icon = "NODE_COMPOSITING")
 		layout.separator()
 		if bpy.app.version >= (4, 4, 0):
 			adj_icon = 'STRIP_COLOR_01'
 		else:
 			adj_icon = 'SEQUENCE_COLOR_01'
+
 		add = layout.operator("scene.comp_add_layer", text="Adjustment Layer", icon=adj_icon)
 		add.name = "Adjustment Layer"
 		add.type = "Adjustment"
@@ -1165,9 +1251,11 @@ class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 			add.name = texture[0]
 			add.type = 'CompositorNodeTexture'
 			add.icon = texture[1]
-		if context.area.ui_type == 'CompositorNodeTree':
-			layout.separator()
-			layout.operator("scene.comp_add_layer_from_node", text="From Node", icon="NODE")
+
+		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+			if context.area.ui_type == 'CompositorNodeTree':
+				layout.separator()
+				layout.operator("scene.comp_add_layer_from_node", text="From Node", icon="NODE")
 
 class COMPOSITOR_MT_add_source_layer(bpy.types.Menu):
 	bl_label = "Source"
@@ -1176,7 +1264,7 @@ class COMPOSITOR_MT_add_source_layer(bpy.types.Menu):
 	def draw(self, context):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layout = self.layout
 		for i, item in enumerate(props.source):
@@ -1197,6 +1285,18 @@ class COMPOSITOR_MT_add_source_layer(bpy.types.Menu):
 			add = layout.operator("scene.comp_add_layer_socket", text=item.name, icon=item.icon)
 			add.name = item.name
 			add.icon = item.icon
+
+class COMPOSITOR_MT_add_comp_layer(bpy.types.Menu):
+	bl_label = "Compositor"
+	bl_options = {'SEARCH_ON_KEY_PRESS'}
+
+	def draw(self, context):
+		layout = self.layout
+		for item in bpy.data.node_groups:
+			if item.type == 'COMPOSITOR' and item.name != context.scene.compositing_node_group.name:
+				add = layout.operator("scene.comp_add_layer_socket", text=item.name, icon="NODE_COMPOSITING")
+				add.name = item.name
+				add.icon = item.icon
 
 class COMPOSITOR_MT_add_texture_layer(bpy.types.Menu):
 	bl_label = "Texture"
@@ -1220,7 +1320,7 @@ class COMPOSITOR_MT_layers_specials(bpy.types.Menu):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		layout = self.layout
@@ -1239,11 +1339,11 @@ def draw_layer(self, context, box):
 	tree = get_scene_tree(context)
 	props = context.scene.compositor_layer_props
 
-	node_group = tree.nodes[props.compositor_panel].node_tree
+	node_group = bpy.data.node_groups[props.compositor_panel]
 	compositor = node_group.compositor_props
-	group_node = tree.nodes[compositor.name]
-
+	
 	row = box.row(align=True)
+	row.operator("scene.comp_add_layer_media", text="", icon="FILEBROWSER")
 	row.operator("wm.call_menu", text="Add Layer", icon='ADD').name = "COMPOSITOR_MT_add_layer"
 	if len(compositor.layer) > 0:
 		row.operator("wm.call_menu", text="Effects", icon='SHADERFX').name = "COMPOSITOR_MT_add_effects"
@@ -1258,6 +1358,7 @@ def draw_layer(self, context, box):
 		
 		active = True
 		if item.type == "Source":
+			group_node = tree.nodes[compositor.name]
 			if item.socket:
 				input = f'{item.source}({item.socket})'
 			else:
@@ -1313,6 +1414,15 @@ def draw_layer(self, context, box):
 				row.prop(transform_node.inputs[4], 'default_value', text="Scale")
 				row.prop(transform_node.inputs[5], 'default_value', text="")
 				col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
+				header, panel = col.panel(idname="Sampling", default_closed=True)
+				header.label(text = "Sampling")
+				if panel:
+					panel_col = panel.column()
+					panel_col.use_property_split = True
+					panel_col.use_property_decorate = False
+					panel_col.prop(transform_node.inputs[6], 'default_value', text="")
+					panel_col.prop(transform_node.inputs[7], 'default_value', text="")
+					panel_col.prop(transform_node.inputs[8], 'default_value', text="")
 
 				if item.type not in ["Source", "Adjustment"]:
 					node = node_group.nodes.get(item.name)
@@ -1376,6 +1486,15 @@ def draw_layer(self, context, box):
 				row.prop(transform_node.inputs[4], 'default_value', text="Scale")
 				row.prop(transform_node.inputs[5], 'default_value', text="")
 				col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
+				header, panel = col.panel(idname="Sampling", default_closed=True)
+				header.label(text = "Sampling")
+				if panel:
+					panel_col = panel.column()
+					panel_col.use_property_split = True
+					panel_col.use_property_decorate = False
+					panel_col.prop(transform_node.inputs[6], 'default_value', text="")
+					panel_col.prop(transform_node.inputs[7], 'default_value', text="")
+					panel_col.prop(transform_node.inputs[8], 'default_value', text="")
 
 			if item.type not in ["Source", "Adjustment"]:
 				node = node_group.nodes.get(item.name)
@@ -1425,6 +1544,7 @@ classes = (
 	Add_OT_Layer_Socket,
 	Add_OT_Layer_All_Socket,
 	Add_OT_Layer_From_Node,
+	Add_OT_Layer_Media,
 	Remove_OT_Layer,
 	Clear_OT_Layer,
 	Duplicate_OT_Layer,
@@ -1433,6 +1553,7 @@ classes = (
 	Drag_OT_Layer,
 	COMPOSITOR_MT_add_layer,
 	COMPOSITOR_MT_add_source_layer,
+	COMPOSITOR_MT_add_comp_layer,
 	COMPOSITOR_MT_add_texture_layer,
 	COMPOSITOR_MT_layers_specials,
 		  )

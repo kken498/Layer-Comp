@@ -24,21 +24,31 @@ class Compositing_Layer_Props(bpy.types.PropertyGroup):
 		return list
 	
 	def update_compositor_panel(self, context):
-		tree = get_scene_tree(context)
-		viewer_node = tree.nodes.get("Viewer")
-		group_node = tree.nodes.get(self.compositor_panel)
-		if not viewer_node:
-			viewer_node = tree.nodes.new("CompositorNodeViewer")
-			viewer_node.location = (group_node.location[0] + 200, group_node.location[0] - 50)
-		tree.links.new(group_node.outputs[0], viewer_node.inputs[0])
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			context.scene.compositing_node_group = bpy.data.node_groups.get(self.compositor_panel)
+		else:
+			tree = get_scene_tree(context)
+			viewer_node = tree.nodes.get("Viewer")
+			group_node = tree.nodes.get(self.compositor_panel)
+			if not viewer_node:
+				viewer_node = tree.nodes.new("CompositorNodeViewer")
+				viewer_node.location = (group_node.location[0] + 200, group_node.location[0] - 50)
+			if group_node.outputs:
+				tree.links.new(group_node.outputs[0], viewer_node.inputs[0])
+
+	def panel_item(self, context):
+		addon_prefs = get_addon_preference(context)
+		items = []
+		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+			items.append(('Source', 'Source', ''))
+		items.append(('Compositor', 'Compositor', ''))
+		items.append(('Output', 'Output', ''))
+		return items
 
 	panel : bpy.props.EnumProperty(
 							name='Compositor Layer Panel', 
-							default = "Compositor",
-							items = [('Source', 'Source', ''),
-									('Compositor', 'Compositor', ''),
-									('Output', 'Output', ''),
-									],
+							items = panel_item,
 							update=update_panel
 									)
 	properties_panel : bpy.props.EnumProperty(default = "Transfrom",
@@ -91,6 +101,9 @@ class Align_OT_Node_Tree(bpy.types.Operator):
 
 		if frame:
 			GroupOutput.location = (frame.location[0] + frame.width + 200, frame.location[1])
+			for node in node_group.nodes:
+				if node.type == "OUTPUT_FILE":
+					node.location = (GroupOutput.location[0], node.location[1])
 
 		return {"FINISHED"}
 

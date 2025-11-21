@@ -83,16 +83,24 @@ class Compositor_Layer:
 
 			if panel:
 				xbox = panel.box()
-				row = xbox.row(align=True)
-				row.prop(addon_prefs, 'preset_type', expand=True)
-				row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
 
-				type = addon_prefs.preset_type
+				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+					type = "Effects"
+				else:
+					row = xbox.row(align=True)
+					row.prop(addon_prefs, 'preset_type', expand=True)
+					row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
+					type = addon_prefs.preset_type
 				
 				col = xbox.column()
-				col.operator("scene.comp_new_preset", text="Create New Preset", icon='ADD').type = type
+				row = col.row(align=True)
+				row.operator("scene.comp_new_preset", text="Create New Preset", icon='ADD').type = type
+				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
+					row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
 				if context.area.ui_type == 'CompositorNodeTree' and type == 'Effects':
 					col.operator("scene.comp_save_preset", text='Save selected as preset', icon = "FILE_TICK").type = type
+				if type == 'Compositors':
+					col.operator("scene.comp_save_preset", text='Save current comp as preset', icon = "FILE_TICK").type = type
 
 				presets = get_presets(type)
 				if len(presets) > 0:
@@ -110,10 +118,15 @@ class Compositor_Layer:
 								sub = panel_box.column()
 								for item in items:
 									row = sub.row()
+									if type == "Compositors":
+										add = row.operator("scene.comp_apply_preset_item", text='', icon = "ADD", emboss=False)
+										add.preset = preset
+										add.target = item
 									row.label(text=item, icon = "SHADERFX" if type == 'Effects' else "NODE_COMPOSITING")
 									remove = row.operator("scene.comp_remove_preset_item", text='', icon = "REMOVE", emboss=False)
 									remove.preset = preset
 									remove.target = item
+									remove.type = type
 							else:
 								panel_box.label(text="Preset has item", icon = "FILEBROWSER")
 				else:
@@ -155,6 +168,9 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 		layout.label(text="User Interface")
 		layout.use_property_split = True
 		layout.use_property_decorate = False
+		if bpy.app.version >= (5, 0, 0):
+			layout.row().prop(addon_prefs, "compositor_type", text="Compositor", expand = True)
+			
 		col = layout.column(heading="Panel", align=True)
 		col.prop(addon_prefs, "view3d", text="3D Viewport Panel")
 		col.prop(addon_prefs, "active_node_panel", text="Active Node")
@@ -174,7 +190,9 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 		row.prop(addon_prefs, "panel_type", text="Panel Type", expand=True)
 		layout.label(text="Operator")
 		col = layout.column(heading="", align=True)
-		col.row().prop(addon_prefs, "new_compositor_option", text="New Compositor", expand = True)
+		colrow = col.row()
+		colrow.active = addon_prefs.compositor_type != '5.0'
+		colrow.prop(addon_prefs, "new_compositor_option", text="New Compositor", expand = True)
 		col = layout.column(heading="", align=True)
 		col.row().prop(addon_prefs, "duplicate_layer_option", text="Duplicate Layer", expand = True)
 		col.row().prop(addon_prefs, "duplicate_effect_option", text="Effect", expand = True)

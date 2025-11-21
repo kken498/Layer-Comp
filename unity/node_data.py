@@ -24,7 +24,7 @@ effect_node_data['CompositorNodeSetAlpha'] = ['Set Alpha', 'INDIRECT_ONLY_ON']
 effect_node_data['CompositorNodePremulKey'] = ['Alpha Convert', 'INDIRECT_ONLY_ON']
 
 effect_node_data['CompositorNodeAntiAliasing'] = ['Anti-Aliasing', 'IPO_CONSTANT']
-effect_node_data['CompositorNodeConvolve'] = ['Convolve', 'IMGDISPLAY']
+effect_node_data['CompositorNodeConvolve'] = ['Convolve', 'CON_GEOMETRYATTRIBUTE']
 effect_node_data['CompositorNodeDespeckle'] = ['Despecklet', 'IPO_EASE_IN_OUT']
 effect_node_data['CompositorNodeInpaint'] = ['InPaint', 'BRUSH_DATA']
 effect_node_data['CompositorNodeFilter'] = ['Filter', 'FILTER']
@@ -62,7 +62,7 @@ effect_node_data['CompositorNodeDisplace'] = ['Displace', 'MOD_DISPLACE']
 effect_node_data['CompositorNodeFlip'] = ['Flip', 'MOD_MIRROR']
 
 source_node_data = {}
-source_node_data['CompositorNodeRLayers'] = ['Render Layer', 'RENDER_RESULT']
+source_node_data['CompositorNodeRLayers'] = ['Render Layers', 'RENDER_RESULT']
 source_node_data['CompositorNodeImage'] = ['Image', 'OUTLINER_OB_IMAGE']
 source_node_data['CompositorNodeMovieClip'] = ['Movie', 'SEQUENCE']
 source_node_data['CompositorNodeRGB'] = ['Solid', 'SNAP_FACE']
@@ -74,6 +74,7 @@ output_node_data['CompositorNodeComposite'] = ['Composite', 'NODE_COMPOSITING']
 output_node_data['CompositorNodeOutputFile'] = ['File Output', 'OUTPUT']
 
 layer_node_data = {}
+layer_node_data['CompositorNodeRLayers'] = ['Render Layers', 'RENDER_RESULT']
 layer_node_data['CompositorNodeImage'] = ['Image', 'OUTLINER_OB_IMAGE']
 layer_node_data['CompositorNodeMovieClip'] = ['Movie Clip', 'SEQUENCE']
 layer_node_data['CompositorNodeRGB'] = ['Solid', 'SNAP_FACE']
@@ -104,6 +105,7 @@ feature_node_data['CompositorNodeInnerShadow'] = ['InnerShadow', 'SELECT_INTERSE
 feature_node_data['CompositorNodeRimLight'] = ['Rim Light', 'LIGHT_AREA']
 feature_node_data['CompositorNodeOuterGlow'] = ['Outer Glow', 'LIGHT_SUN']
 feature_node_data['CompositorNodeBoundaryLine'] = ['BoundaryLine', 'MOD_LINEART']
+feature_node_data['CompositorNodePaintFilter'] = ['Paint Filter', 'BRUSHES_ALL']
 feature_node_data['CompositorNodeSpotExposure'] = ['Spot Exposure', 'LIGHT_SPOT']
 feature_node_data['CompositorNodeCameraLensBlur'] = ['Camera Lens Blur', 'VIEW_CAMERA']
 feature_node_data['CompositorNodeChromaticAberration'] = ['Chromatic Aberration', 'SEQ_CHROMA_SCOPE']
@@ -115,14 +117,17 @@ feature_node_data['CompositorNodeHalation'] = ['Halation', 'SHADERFX']
 feature_node_data['CompositorNodeBlurRGB'] = ['Blur RGB', 'PROP_CON']
 feature_node_data['CompositorNodeTwitch'] = ['Twitch', 'GHOST_ENABLED']
 feature_node_data['CompositorNodeRenoiser'] = ['Renoiser', 'TEXTURE']
-feature_node_data['CompositorNodeWiggleTransfrom'] = ['Wiggle Transfrom', 'CON_ROTLIKE']
 feature_node_data['CompositorNodeSeparateRGBA'] = ['Separate RGBA', 'PARTICLES']
+feature_node_data['CompositorNodeWiggleTransfrom'] = ['Wiggle Transfrom', 'CON_ROTLIKE']
+feature_node_data['CompositorNodeTile'] = ['Tile', 'SNAP_VERTEX']
 
 feature_node_data_4_5 = ['CompositorNodeSwingTilt', 'CompositorNodeTwitch', 'CompositorNodeWiggleTransfrom']
+feature_node_data_5_0 = ['CompositorNodeTile']
 
 socket_data = {}
 socket_data['RGBA'] = 'NODE_SOCKET_RGBA'
 socket_data['VALUE'] = 'NODE_SOCKET_FLOAT'
+socket_data['FLOAT'] = 'NODE_SOCKET_FLOAT'
 socket_data['VECTOR'] = 'NODE_SOCKET_VECTOR'
 socket_data['BOOLEAN'] = 'NODE_SOCKET_BOOLEAN'
 socket_data['INT'] = 'NODE_SOCKET_INT'

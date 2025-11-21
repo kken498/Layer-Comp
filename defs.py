@@ -18,10 +18,16 @@ def offset_node(node_group, offset_node, type, offset):
 
 def get_scene_compositor(context):
 	tree = get_scene_tree(context)
+	addon_prefs = get_addon_preference(context)
 	compositor = []
-	for node in tree.nodes:
-		if node.type == "GROUP" and node.node_tree.compositor_props.name != "":
-			compositor.append(node.node_tree.name)
+	if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+		for node in bpy.data.node_groups:
+			if node.compositor_props.name != "":
+				compositor.append(node.name)
+	else:
+		for node in tree.nodes:
+			if node.type == "GROUP" and node.node_tree.compositor_props.name != "":
+				compositor.append(node.node_tree.name)
 	return compositor
 
 def get_scene_tree(context):
@@ -117,6 +123,8 @@ def get_inputs(node):
 		inputs = node.inputs['Image']
 	elif node.inputs.get('Color'):
 		inputs = node.inputs['Color']
+	elif node.inputs.get('Background'):
+		inputs = node.inputs['Background']
 	elif node.inputs.get('Fac'):
 		inputs = node.inputs['Fac']
 	elif node.inputs:

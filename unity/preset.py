@@ -68,6 +68,13 @@ class Remove_OT_Preset(bpy.types.Operator):
 		wm = context.window_manager
 		return wm.invoke_props_dialog(self)
 
+	def draw(self, context):
+		layout = self.layout
+		layout.label(text=f"Comfirm remove preset - {self.name}")
+		col = layout.column()
+		col.alert = True
+		col.label(text="Operation cannot be undone!")
+
 	def execute(self, context):
 		filepath = get_filepath(self.type)
 		blendfile  = os.path.join(filepath, f"{self.name}.blend")
@@ -225,27 +232,30 @@ class Save_OT_Preset(bpy.types.Operator):
 
 	def execute(self, context):
 		tree = get_scene_tree(context)
-		selected_node = [node for node in tree.nodes if node.select and node.type == "GROUP"]
-
 		self.available_node = []
+		if self.type == "Effects":
+			selected_node = [node for node in tree.nodes if node.select and node.type == "GROUP"]
 
-		# Check is NodeTree available | NodeTree need image input socket and output sockets
-		for node in selected_node:
-			if node.inputs.get('Image') and node.outputs:
-				self.available_node.append(node)
-				node.node_tree.use_fake_user = True
-			else:
-				unavailable = []
-				if not node.inputs.get('Image'):
-					unavailable.append("No image input socket")
-				if not node.outputs:
-					unavailable.append("No output sockets")
-				
-				self.unavailable_node[node.node_tree.name] = unavailable
+			# Check is NodeTree available | NodeTree need image input socket and output sockets
+			for node in selected_node:
+				if node.inputs.get('Image') and node.outputs:
+					self.available_node.append(node.node_tree)
+					node.node_tree.use_fake_user = True
+				else:
+					unavailable = []
+					if not node.inputs.get('Image'):
+						unavailable.append("No image input socket")
+					if not node.outputs:
+						unavailable.append("No output sockets")
+					
+					self.unavailable_node[node.name] = unavailable
 
-		# If any unavailable node then return dialog | you can skip by skip option from dialog
-		if self.unavailable_node and not self.skip:
-			return context.window_manager.invoke_props_dialog(self)
+			# If any unavailable node then return dialog | you can skip by skip option from dialog
+			if self.unavailable_node and not self.skip:
+				return context.window_manager.invoke_props_dialog(self)
+			
+		elif self.type == "Compositors":
+			self.available_node.append(bpy.data.node_groups[context.scene.compositing_node_group.name])
 
 		# Get preset filepath
 		filepath = get_filepath(self.type)
@@ -257,7 +267,7 @@ class Save_OT_Preset(bpy.types.Operator):
 		# Get every node group and check ig they exist
 		with bpy.data.libraries.load(blendfile, link=False) as (data_from, data_to):
 			for node in self.available_node:
-				if node.node_tree.name in data_from.node_groups:
+				if node.name in data_from.node_groups:
 					self.exist_node.append(node)
 
 			for node_group in data_from.node_groups:
@@ -268,12 +278,12 @@ class Save_OT_Preset(bpy.types.Operator):
 		# If any exist node then return dialog | you can skip or overwrite
 		if self.exist_node and not (self.skip or self.overwrite):
 			return context.window_manager.invoke_props_dialog(self)
-
+		
 		# Appended group + Available_node
 		if self.overwrite:
-			data_blocks = {bpy.data.node_groups[group] for group in appended_group} | {node.node_tree for node in self.available_node}
+			data_blocks = {bpy.data.node_groups[group] for group in appended_group} | {node for node in self.available_node}
 		else:
-			data_blocks = {bpy.data.node_groups[group] for group in appended_group} | {node.node_tree for node in self.available_node if node not in self.exist_node}
+			data_blocks = {bpy.data.node_groups[group] for group in appended_group} | {node for node in self.available_node if node not in self.exist_node}
 
 		bpy.data.libraries.write(blendfile, data_blocks, fake_user=True, compress=True)
 
@@ -306,6 +316,13 @@ class Remove_OT_Preset_Item(bpy.types.Operator):
 	def invoke(self, context, event):
 		wm = context.window_manager
 		return wm.invoke_props_dialog(self)
+
+	def draw(self, context):
+		layout = self.layout
+		layout.label(text=f"Comfirm remove preset - {self.target}")
+		col = layout.column()
+		col.alert = True
+		col.label(text="Operation cannot be undone!")
 
 	def execute(self, context):
 
@@ -349,6 +366,48 @@ class Remove_OT_Preset_Item(bpy.types.Operator):
 
 		return {"FINISHED"}
 
+class Apply_OT_Preset_Item(bpy.types.Operator):
+	bl_idname = "scene.comp_apply_preset_item"
+	bl_label = "Apply Presets"
+	bl_description = "Apply Presets"
+	bl_options = {'REGISTER', 'UNDO'}
+
+	preset : bpy.props.StringProperty(options={'HIDDEN'})
+	target : bpy.props.StringProperty(options={'HIDDEN'})
+
+	def invoke(self, context, event):
+		wm = context.window_manager
+		return wm.invoke_props_dialog(self)
+
+	def draw(self, context):
+		layout = self.layout
+		layout.label(text="Comfirm apply compositor preset")
+
+	def execute(self, context):
+		props = context.scene.compositor_layer_props
+
+		target = self.target
+
+		# Get preset filepath
+		filepath = get_filepath('Compositors')
+		blendfile = os.path.join(filepath, f'{self.preset}.blend')
+
+		if target not in bpy.data.node_groups:
+			with bpy.data.libraries.load(blendfile) as (data_from, data_to):
+				data_to.node_groups = [name for name in data_from.node_groups if name == name]
+
+		node_group = bpy.data.node_groups[target]
+
+		context.scene.compositing_node_group = node_group
+
+		item = node_group.compositor_props
+		item.sub_name = node_group.name
+		item.name = node_group.name
+
+		self.report({"INFO"}, f"Apply {target} Preset!")
+
+		return {"FINISHED"}
+
 class COMPOSITOR_MT_preset_specials(bpy.types.Menu):
 	bl_label = "Preset Specials"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -386,6 +445,7 @@ classes = (
 	Load_OT_Preset,
 	Save_OT_Preset,
 	Remove_OT_Preset_Item,
+	Apply_OT_Preset_Item,
 	COMPOSITOR_MT_preset_specials,
 	COMPOSITOR_MT_export_presets,
 		  )

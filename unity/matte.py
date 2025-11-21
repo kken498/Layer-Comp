@@ -1,12 +1,10 @@
 import bpy
-from ..defs import *
 from .node import *
 
 class Matte_Props(bpy.types.PropertyGroup):
 	def matte_item(self, context):
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		list = []
 		list.append(("None", "None", '', 'BLANK1', 0))
@@ -37,7 +35,10 @@ class Matte_Props(bpy.types.PropertyGroup):
 			mix_node = node_group.nodes.get(f'{self.matte}.Mix')
 			transform_node = node_group.nodes.get(f'{self.matte}.Transform')
 			if not math_node:
-				math_node = node_group.nodes.new('CompositorNodeMath')
+				if bpy.app.version >= (5, 0, 0):
+					math_node = node_group.nodes.new('ShaderNodeMath')
+				else:
+					math_node = node_group.nodes.new('CompositorNodeMath')
 				math_node.name = f'{self.name}.Mask_Mix'
 				math_node.operation = 'MULTIPLY'
 				math_node.inputs[0].default_value = 1
@@ -69,7 +70,10 @@ class Matte_Props(bpy.types.PropertyGroup):
 				node_group.links.new(transform_node.outputs[0], set_matte_node.inputs[0])
 
 			if not matte_math_node:
-				matte_math_node = node_group.nodes.new('CompositorNodeMath')
+				if bpy.app.version >= (5, 0, 0):
+					matte_math_node = node_group.nodes.new('ShaderNodeMath')
+				else:
+					matte_math_node = node_group.nodes.new('CompositorNodeMath')
 				matte_math_node.name = f'{self.matte}.Mask_Mix'
 				matte_math_node.operation = 'MULTIPLY'
 				matte_math_node.inputs[0].default_value = 1

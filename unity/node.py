@@ -88,16 +88,14 @@ def create_transform_node_group():
 	translate = __transform.nodes.new("CompositorNodeTranslate")
 	translate.name = "Translate"
 
-	if bpy.app.version < (5, 0, 0):
+	scale.frame_method = 'STRETCH'
+	scale.space = 'RELATIVE'
 
-		scale.frame_method = 'STRETCH'
-		scale.space = 'RELATIVE'
+	rotate.filter_type = 'BILINEAR'
 
-		rotate.filter_type = 'BILINEAR'
-
-		translate.interpolation = 'NEAREST'
-		translate.use_relative = False
-		translate.wrap_axis = 'NONE'
+	translate.interpolation = 'NEAREST'
+	translate.use_relative = False
+	translate.wrap_axis = 'NONE'
 
 	#Set locations
 	group_output.location = (350.03118896484375, 0.0)
@@ -272,7 +270,7 @@ class NodeLib:
 		version = bpy.app.version
 
 		if version >= (4, 5, 0):
-			folder = cls.BASE_DIR / "node_main"
+			folder = cls.BASE_DIR / "node_v4_5"
 		elif version < (4, 5, 0):
 			folder = cls.BASE_DIR / "node_v4_4_below"
 			
@@ -281,11 +279,13 @@ class NodeLib:
 		return classes
 
 def register():
-	nodes = NodeLib.get_node()
-	for cls in nodes:
-		bpy.utils.register_class(cls)
+	if bpy.app.version < (5, 0, 0):
+		nodes = NodeLib.get_node()
+		for cls in nodes:
+			bpy.utils.register_class(cls)
 
 def unregister():
-	nodes = NodeLib.get_node()
-	for cls in nodes:
-		bpy.utils.unregister_class(cls)
+	if bpy.app.version < (5, 0, 0):
+		nodes = NodeLib.get_node()
+		for cls in nodes:
+			bpy.utils.unregister_class(cls)

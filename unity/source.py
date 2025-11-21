@@ -23,21 +23,24 @@ class Source_Props(bpy.types.PropertyGroup):
 		self["name"] = new_name
 
 	def update_name(self, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
+
+		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
 		
-		if len(get_scene_compositor(context)) > 0:
-			for name in get_scene_compositor(context):
-				group_node = tree.nodes[name]
-				for layer in group_node.node_tree.compositor_props.layer:
-					if layer.source == self.sub_name:
-						layer.source = self.name
+			if len(get_scene_compositor(context)) > 0:
+				for name in get_scene_compositor(context):
+					group_node = tree.nodes[name]
+					for layer in group_node.node_tree.compositor_props.layer:
+						if layer.source == self.sub_name:
+							layer.source = self.name
 
-				if group_node.inputs.get(self.sub_name):
-					group_node.inputs[self.sub_name].name = self.name
+					if group_node.inputs.get(self.sub_name):
+						group_node.inputs[self.sub_name].name = self.name
 
-				GroupInput = group_node.node_tree.nodes.get("Group Input")
-				if GroupInput.outputs.get(self.sub_name):
-					GroupInput.outputs[self.sub_name].name = self.name
+					GroupInput = group_node.node_tree.nodes.get("Group Input")
+					if GroupInput.outputs.get(self.sub_name):
+						GroupInput.outputs[self.sub_name].name = self.name
 
 		node = tree.nodes.get(self.sub_name)
 		if node:
@@ -137,6 +140,10 @@ class Reload_OT_Source(bpy.types.Operator):
 	bl_label = "Reload Compositor Source"
 	bl_description = "Reload Compositor Source"
 	bl_options = {'REGISTER', 'UNDO'}
+
+	@classmethod
+	def poll(cls, context):
+		return get_scene_tree(context)
 
 	def execute(self, context):
 		# Define props
@@ -256,7 +263,7 @@ class Load_OT_Source_Media(bpy.types.Operator, ImportHelper):
 				else:
 					movieclips = bpy.data.movieclips.load(file_path)
 
-				bpy.ops.scene.comp_add_source(type = 'MOVIECLIP')
+				bpy.ops.scene.comp_add_source(type = 'CompositorNodeMovieClip')
 
 				movieclips.use_fake_user = True
 
@@ -271,7 +278,7 @@ class Load_OT_Source_Media(bpy.types.Operator, ImportHelper):
 				else:
 					image = bpy.data.images.load(file_path)
 
-				bpy.ops.scene.comp_add_source(type = 'IMAGE')
+				bpy.ops.scene.comp_add_source(type = 'CompositorNodeImage')
 
 				image.use_fake_user = True
 

@@ -13,9 +13,8 @@ class Effect_Props(bpy.types.PropertyGroup):
 
 		# Define props
 		context = bpy.context
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[compositor.layer_index]
 
@@ -81,6 +80,7 @@ class Effect_Props(bpy.types.PropertyGroup):
 
 		list = []
 		i = 0
+
 		for item in effect_node.outputs:
 			if item.enabled:
 				if bpy.app.version >= (4, 5, 0):
@@ -192,6 +192,7 @@ class Append_OT_Effect(bpy.types.Operator):
 	name : bpy.props.StringProperty(options={'HIDDEN'})
 	type : bpy.props.StringProperty(options={'HIDDEN'})
 	icon : bpy.props.StringProperty(options={'HIDDEN'})
+	file : bpy.props.StringProperty(options={'HIDDEN'})
 
 	def execute(self, context):
 		# Define props
@@ -206,10 +207,15 @@ class Append_OT_Effect(bpy.types.Operator):
 		frame = node_group.nodes.get(f"{layer.name}.Frame")
 
 		existing_names = [item.name for item in layer.effect]
-		name = unique_name(self.name, existing_names)
+		if self.name in feature_node_data:
+			name = feature_node_data[self.name][0]
+		else:
+			name = self.name
+
+		name = unique_name(name, existing_names)
 
 		# Create effect node
-		effect_node = append_node('Effects',self.name, f'{self.type}', node_group.nodes)
+		effect_node = append_node(self.file, self.name, f'{self.type}', node_group.nodes)
 		effect_node.name = f'{layer.name}.Effect.{name}'
 		effect_node.parent = frame
 		effect_node.location = transform_node.location
@@ -239,6 +245,39 @@ class Append_OT_Effect(bpy.types.Operator):
 
 		return {"FINISHED"}
 
+class Append_OT_Presets(bpy.types.Operator):
+	bl_idname = "scene.append_presets_node"
+	bl_label = "Append Presets Node"
+	bl_description = "Append Presets Node"
+	bl_options = {'REGISTER', 'UNDO'}
+
+	x = None
+	y = None
+
+	name : bpy.props.StringProperty(options={'HIDDEN'})
+	type : bpy.props.StringProperty(options={'HIDDEN'})
+	file : bpy.props.StringProperty(options={'HIDDEN'})
+
+	def invoke(self, context, event):
+		region = context.region.view2d  
+		ui_scale = context.preferences.system.ui_scale     
+		x, y = region.region_to_view(event.mouse_region_x, event.mouse_region_y)
+		self.x,self.y = x /ui_scale,y/ui_scale
+		return self.execute(context)
+
+	def execute(self, context):
+		if self.name in feature_node_data:
+			name = feature_node_data[self.name][0]
+		else:
+			name = self.name
+
+		# Create effect node
+		effect_node = append_node(self.file, self.name, f'{self.type}', context.scene.compositing_node_group.nodes)
+		effect_node.name = name
+		effect_node.location = self.x, self.y
+
+		return {"FINISHED"}
+
 class Append_OT_Effect_Preset(bpy.types.Operator):
 	bl_idname = "scene.comp_append_effect_preset"
 	bl_label = "Append Compositor Layer Effect Preset"
@@ -246,6 +285,7 @@ class Append_OT_Effect_Preset(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	preset : bpy.props.StringProperty(options={'HIDDEN'})
+	type : bpy.props.StringProperty(options={'HIDDEN'})
 
 	def invoke(self, context, event):
 		wm = context.window_manager
@@ -254,10 +294,17 @@ class Append_OT_Effect_Preset(bpy.types.Operator):
 	def draw(self, context):
 		layout = self.layout
 		for effect in get_presets_item(self.preset, 'Effects'):
-			add = layout.operator("scene.comp_append_effect",text=effect, emboss = False)
-			add.name = effect
-			add.type = self.preset
-			add.icon = "PRESET"
+			if self.type == "COMP":
+				add = layout.operator("scene.comp_append_effect",text=effect, emboss = False)
+				add.name = effect
+				add.type = self.preset
+				add.file = 'Effects'
+				add.icon = "PRESET"
+			else:
+				add = layout.operator("scene.append_presets_node",text=effect, emboss = False)
+				add.name = effect
+				add.type = self.preset
+				add.file = 'Effects'
 
 	def execute(self, context):
 		return {"FINISHED"}
@@ -533,10 +580,14 @@ class Copy_OT_Effect(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def compositor_item(self, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		list = []
 		for i, name in enumerate(get_scene_compositor(context)):
-			node_group = tree.nodes[name].node_tree
+			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+				node_group = bpy.data.node_groups[name]
+			else:
+				node_group = tree.nodes[name].node_tree
 			compositor = node_group.compositor_props
 			if compositor.layer:
 				list.append((name, name, ''))
@@ -544,7 +595,11 @@ class Copy_OT_Effect(bpy.types.Operator):
 	
 	def layer_item(self, context):
 		tree = get_scene_tree(context)
-		node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			node_group = bpy.data.node_groups[self.compositor]
+		else:
+			node_group = tree.nodes[self.compositor].node_tree
 		compositor = node_group.compositor_props
 		list = []
 		for i, item in enumerate(compositor.layer):
@@ -554,7 +609,11 @@ class Copy_OT_Effect(bpy.types.Operator):
 	
 	def effect_item(self, context):
 		tree = get_scene_tree(context)
-		node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			node_group = bpy.data.node_groups[self.compositor]
+		else:
+			node_group = tree.nodes[self.compositor].node_tree
 		compositor = node_group.compositor_props
 		list = []
 		layer = compositor.layer[int(self.layer)]
@@ -583,9 +642,13 @@ class Copy_OT_Effect(bpy.types.Operator):
 	
 	@classmethod
 	def poll(cls, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		for name in get_scene_compositor(context):
-			node_group = tree.nodes[name].node_tree
+			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+				node_group = bpy.data.node_groups[name]
+			else:
+				node_group = tree.nodes[name].node_tree
 			comp = node_group.compositor_props
 			for layer in comp.layer:
 				if len(layer.effect) > 0:
@@ -604,11 +667,17 @@ class Copy_OT_Effect(bpy.types.Operator):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[compositor.layer_index]
 
-		copy_node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			copy_node_group = bpy.data.node_groups[self.compositor]
+		else:
+			copy_node_group = tree.nodes[self.compositor].node_tree
+
 		copy_compositor = copy_node_group.compositor_props
 		copy_layer = copy_compositor.layer[int(self.layer)]
 
@@ -863,14 +932,34 @@ class CompositorAddMenu:
 
 	@classmethod
 	def operator_add_effect(cls, layout, name):
-		node_data = effect_node_data | feature_node_data
-		data = node_data[name]
-		layout.operator(
-			"scene.comp_add_effect",
-			text=data[0],
-			text_ctxt=data[0],
-			icon=data[1],
-		).type = name
+		version = bpy.app.version
+		if version >= (5, 0, 0):
+			if name in effect_node_data:
+				data = effect_node_data[name]
+				layout.operator(
+					"scene.comp_add_effect",
+					text=data[0],
+					text_ctxt=data[0],
+					icon=data[1],
+				).type = name
+
+			elif name in feature_node_data:
+				data = feature_node_data[name]
+				add = layout.operator("scene.comp_append_effect",text=data[0], text_ctxt=data[0], icon=data[1])
+				add.name = data[0]
+				add.type = "v5_0"
+				add.file = 'Presets'
+				add.icon = data[1]
+
+		else:
+			node_data = effect_node_data | feature_node_data
+			data = node_data[name]
+			layout.operator(
+				"scene.comp_add_effect",
+				text=data[0],
+				text_ctxt=data[0],
+				icon=data[1],
+			).type = name
 
 class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Effect"
@@ -900,6 +989,7 @@ class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 			layout.menu("COMPOSITOR_MT_add_effects_features_other")
 		layout.separator()
 		layout.menu("COMPOSITOR_MT_add_effects_presets", icon="PRESET")
+		#self.draw_root_assets(layout)
 
 class COMPOSITOR_MT_add_effects_adjustment(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Adjustment"
@@ -942,7 +1032,7 @@ class COMPOSITOR_MT_add_effects_filter(CompositorAddMenu, bpy.types.Menu):
 
 		self.operator_add_effect(layout, "CompositorNodeAntiAliasing")
 		if bpy.app.version >= (5, 0, 0):
-			self.operator_add_effect(layout, "CompositorNodeConvolv")
+			self.operator_add_effect(layout, "CompositorNodeConvolve")
 		self.operator_add_effect(layout, "CompositorNodeDespeckle")
 		self.operator_add_effect(layout, "CompositorNodeInpaint")
 		self.operator_add_effect(layout, "CompositorNodeFilter")
@@ -1035,13 +1125,14 @@ class COMPOSITOR_MT_add_effects_features_looks(CompositorAddMenu, bpy.types.Menu
 	def draw(self, context):
 		version = bpy.app.version
 		layout = self.layout
+		if bpy.app.version >= (5, 0, 0):
+			self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeSpotExposure")
 		self.operator_add_effect(layout, "CompositorNodeCameraLensBlur")
 		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
 		self.operator_add_effect(layout, "CompositorNodeVignette")
 		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
-		if version >= (4, 5, 0):
-			self.operator_add_effect(layout, "CompositorNodeSwingTilt")
+		self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
 		self.operator_add_effect(layout, "CompositorNodeHalation")
 		self.operator_add_effect(layout, "CompositorNodeBlurRGB")
@@ -1056,6 +1147,8 @@ class COMPOSITOR_MT_add_effects_features_other(CompositorAddMenu, bpy.types.Menu
 	def draw(self, context):
 		layout = self.layout
 		self.operator_add_effect(layout, "CompositorNodeWiggleTransfrom")
+		if bpy.app.version >= (5, 0, 0):
+			self.operator_add_effect(layout, "CompositorNodeTile")
 
 class COMPOSITOR_MT_add_effects_presets(bpy.types.Menu):
 	bl_label = "Presets"
@@ -1066,7 +1159,24 @@ class COMPOSITOR_MT_add_effects_presets(bpy.types.Menu):
 		layout = self.layout
 		if len(presets) > 0:
 			for preset in presets:
-				layout.operator("scene.comp_append_effect_preset",text=preset).preset = preset
+				add = layout.operator("scene.comp_append_effect_preset",text=preset)
+				add.preset = preset
+				add.type = "COMP"
+		else:
+			layout.label(text="No Preset")
+
+class COMPOSITOR_MT_append_effects_presets(bpy.types.Menu):
+	bl_label = "Presets"
+	bl_options = {'SEARCH_ON_KEY_PRESS'}
+
+	def draw(self, context):
+		presets = get_presets('Effects')
+		layout = self.layout
+		if len(presets) > 0:
+			for preset in presets:
+				add = layout.operator("scene.comp_append_effect_preset",text=preset)
+				add.preset = preset
+				add.type = ""
 		else:
 			layout.label(text="No Preset")
 
@@ -1089,15 +1199,22 @@ class NODE_MT_add_feature_node(bpy.types.Menu):
 	def draw(self, context):
 		layout = self.layout
 		for name in feature_node_data:
-			if bpy.app.version < (4, 5, 0) and name in feature_node_data_4_5:
-				continue
 			data = feature_node_data[name]
-			layout.operator('node.add_node', text=data[0], icon = data[1]).type = name
+			if bpy.app.version >= (5, 0, 0):
+				add = layout.operator("scene.append_presets_node",text=data[0], text_ctxt=data[0], icon=data[1])
+				add.name = data[0]
+				add.type = "v5_0"
+				add.file = 'Presets'
+			else:
+				if bpy.app.version < (4, 5, 0) and name in feature_node_data_4_5:
+					continue
+				if bpy.app.version < (5, 0, 0) and name in feature_node_data_5_0:
+					continue
+				layout.operator('node.add_node', text=data[0], icon = data[1]).type = name
 
 def draw_effect(self, context, box):
-	tree = get_scene_tree(context)
 	props = context.scene.compositor_layer_props
-	node_group = tree.nodes[props.compositor_panel].node_tree
+	node_group = bpy.data.node_groups[props.compositor_panel]
 	compositor = node_group.compositor_props
 	layer = compositor.layer[compositor.layer_index]
 
@@ -1189,13 +1306,14 @@ def feature_node_menu(self, context):
 	if context.space_data.tree_type == "CompositorNodeTree":
 		self.layout.separator()
 		self.layout.menu('NODE_MT_add_feature_node', icon = 'SHADERFX')
-		self.layout.menu("COMPOSITOR_MT_add_effects_presets", icon="PRESET")
+		self.layout.menu("COMPOSITOR_MT_append_effects_presets", icon="PRESET")
 
 classes = (
 	Effect_Props,
 	Add_OT_Effect,
 	Append_OT_Effect,
 	Append_OT_Effect_Preset,
+	Append_OT_Presets,
 	Remove_OT_Effect,
 	Clear_OT_Effect,
 	Duplicate_OT_Effect,
@@ -1215,6 +1333,7 @@ classes = (
 	COMPOSITOR_MT_add_effects_features_looks,
 	COMPOSITOR_MT_add_effects_features_other,
 	COMPOSITOR_MT_add_effects_presets,
+	COMPOSITOR_MT_append_effects_presets,
 	COMPOSITOR_MT_effects_specials,
 	NODE_MT_add_feature_node,
 		  )

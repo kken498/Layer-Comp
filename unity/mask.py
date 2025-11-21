@@ -13,7 +13,7 @@ class Mask_Props(bpy.types.PropertyGroup):
 		context = bpy.context
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[compositor.layer_index]
 
@@ -86,7 +86,10 @@ class Add_OT_Mask(bpy.types.Operator):
 		name = unique_name(self.mask_type, existing_names)
 
 		if not math_node:
-			math_node = node_group.nodes.new('CompositorNodeMath')
+			if bpy.app.version >= (5, 0, 0):
+				math_node = node_group.nodes.new('ShaderNodeMath')
+			else:
+				math_node = node_group.nodes.new('CompositorNodeMath')
 			math_node.name = f'{layer.name}.Mask_Mix'
 			math_node.operation = 'MULTIPLY'
 			math_node.inputs[0].default_value = 1
@@ -101,14 +104,19 @@ class Add_OT_Mask(bpy.types.Operator):
 		if not feather_node:
 			feather_node = node_group.nodes.new("CompositorNodeBlur")
 			feather_node.name = f'{layer.name}.Mask_Feather'
-			feather_node.filter_type = 'FAST_GAUSS'
-			if bpy.app.version >= (4, 5, 0):
-				feather_node.inputs[2].default_value = True
-			elif bpy.app.version < (4, 5, 0):
-				feather_node.size_x = 500
-				feather_node.size_y = 500
-				feather_node.use_extended_bounds = True
-				feather_node.inputs[1].default_value = 0
+			if bpy.app.version >= (5, 0, 0):
+				feather_node.inputs[2].default_value = 'Fast Gaussian'
+				feather_node.inputs[3].default_value = True
+
+			else:
+				feather_node.filter_type = 'FAST_GAUSS'
+				if bpy.app.version >= (4, 5, 0):
+					feather_node.inputs[2].default_value = True
+				elif bpy.app.version < (4, 5, 0):
+					feather_node.size_x = 500
+					feather_node.size_y = 500
+					feather_node.use_extended_bounds = True
+					feather_node.inputs[1].default_value = 0
 			feather_node.parent = frame
 			feather_node.location = (math_node.location[0]-150, math_node.location[1]+150)
 			node_group.links.new(feather_node.outputs[0], math_node.inputs[0])
@@ -132,7 +140,7 @@ class Add_OT_Mask(bpy.types.Operator):
 			sub_node = node_group.nodes.get(f'{layer.name}.Mask.{layer.mask[-1].name}')
 			if sub_node:
 				mask_node.location = sub_node.location.copy()
-				node_group.links.new(mask_node.outputs[0], sub_node.inputs[0])
+				node_group.links.new(mask_node.outputs[0], sub_node.inputs['Mask'])
 				offset_node(node_group, mask_node, 'X', 150)
 		else:
 			mask_node.location = (feather_node.location[0]-150, feather_node.location[1]+150)
@@ -250,10 +258,14 @@ class Copy_OT_Mask(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def compositor_item(self, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		list = []
 		for i, name in enumerate(get_scene_compositor(context)):
-			node_group = tree.nodes[name].node_tree
+			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+				node_group = bpy.data.node_groups[name]
+			else:
+				node_group = tree.nodes[name].node_tree
 			compositor = node_group.compositor_props
 			if compositor.layer:
 				list.append((name, name, ''))
@@ -261,7 +273,11 @@ class Copy_OT_Mask(bpy.types.Operator):
 	
 	def layer_item(self, context):
 		tree = get_scene_tree(context)
-		node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			node_group = bpy.data.node_groups[self.compositor]
+		else:
+			node_group = tree.nodes[self.compositor].node_tree
 		compositor = node_group.compositor_props
 		list = []
 		for i, item in enumerate(compositor.layer):
@@ -271,7 +287,11 @@ class Copy_OT_Mask(bpy.types.Operator):
 	
 	def mask_item(self, context):
 		tree = get_scene_tree(context)
-		node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			node_group = bpy.data.node_groups[self.compositor]
+		else:
+			node_group = tree.nodes[self.compositor].node_tree
 		compositor = node_group.compositor_props
 		layer = compositor.layer[int(self.layer)]
 		list = []
@@ -305,9 +325,13 @@ class Copy_OT_Mask(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		for name in get_scene_compositor(context):
-			node_group = tree.nodes[name].node_tree
+			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+				node_group = bpy.data.node_groups[name]
+			else:
+				node_group = tree.nodes[name].node_tree
 			comp = node_group.compositor_props
 			for layer in comp.layer:
 				if len(layer.mask) > 0:
@@ -326,11 +350,17 @@ class Copy_OT_Mask(bpy.types.Operator):
 		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 
-		node_group = tree.nodes[props.compositor_panel].node_tree
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		layer = compositor.layer[compositor.layer_index]
 
-		copy_node_group = tree.nodes[self.compositor].node_tree
+		addon_prefs = get_addon_preference(context)
+
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			copy_node_group = bpy.data.node_groups[self.compositor]
+		else:
+			copy_node_group = tree.nodes[self.compositor].node_tree
+
 		copy_compositor = copy_node_group.compositor_props
 		copy_layer = copy_compositor.layer[int(self.layer)]
 
@@ -376,9 +406,8 @@ class COMPOSITOR_MT_masks_specials(bpy.types.Menu):
 		layout.operator("scene.comp_clear_mask", text="Clear Masks", icon='TRASH', emboss = False)
 
 def draw_mask(self, context, box):
-	tree = get_scene_tree(context)
 	props = context.scene.compositor_layer_props
-	node_group = tree.nodes[props.compositor_panel].node_tree
+	node_group = bpy.data.node_groups[props.compositor_panel]
 	compositor = node_group.compositor_props
 	layer = compositor.layer[compositor.layer_index]
 
@@ -389,8 +418,13 @@ def draw_mask(self, context, box):
 	col.use_property_decorate = False
 	col.prop(feather_node, "filter_type", text="Feather")
 	row = col.row(align=True)
-	if bpy.app.version >= (4, 5, 0):
-		row.prop(feather_node.inputs[1], 'default_value', text="Scale", index=0)
+	if bpy.app.version >= (5, 0, 0):
+		row.prop(feather_node.inputs[1], 'default_value', text="Size", index=0)
+		row.prop(feather_node.inputs[1], 'default_value', text="", index=1)
+		col.prop(feather_node.inputs[2], 'default_value', text="Type")
+		col.prop(feather_node.inputs[3], 'default_value', text="Extends Bounds")
+	elif bpy.app.version >= (4, 5, 0) and bpy.app.version < (5, 0, 0):
+		row.prop(feather_node.inputs[1], 'default_value', text="Size", index=0)
 		row.prop(feather_node.inputs[1], 'default_value', text="", index=1)
 		col.prop(feather_node.inputs[2], 'default_value', text="Extends Bounds")
 	elif bpy.app.version < (4, 5, 0):
@@ -410,7 +444,10 @@ def draw_mask(self, context, box):
 		sub.label(text="", icon = icon)
 		sub.prop(mask, "hide", text = "", icon = "HIDE_ON" if mask.hide == True else "HIDE_OFF", invert_checkbox=True)
 		sub.prop(mask, "name", text = "")
-		sub.prop(node, "mask_type", text = "")
+		if bpy.app.version >= (5, 0, 0):
+			sub.prop(node.inputs[0], 'default_value', text="")
+		else:
+			sub.prop(node, "mask_type", text = "")
 		rest = sub.operator("scene.comp_rest_node", text="", icon='FILE_REFRESH')
 		rest.node_group = node_group.name
 		rest.node = node.name
@@ -424,8 +461,20 @@ def draw_mask(self, context, box):
 			col = panel_box.column()
 			col.use_property_split = True
 			col.use_property_decorate = False
-			col.prop(node, "mask_type", text = "Mask Type")
-			if bpy.app.version >= (4, 5, 0):
+			if bpy.app.version >= (5, 0, 0):
+				col.prop(node.inputs[0], 'default_value', text="Mask Type")
+				if not any(link.to_node == node for link in node_group.links):
+					col.prop(node.inputs[1], 'default_value', text="Mask")
+				row = col.row(align=True)
+				row.prop(node.inputs[3], 'default_value', text="Position", index=0)
+				row.prop(node.inputs[3], 'default_value', text="", index=1)
+				row = col.row(align=True)
+				row.prop(node.inputs[4], 'default_value', text="Scale", index=0)
+				row.prop(node.inputs[4], 'default_value', text="", index=1)
+				col.prop(node.inputs[5], 'default_value', text="Rotation")
+				col.prop(node.inputs[2], 'default_value', text="Value")
+			elif bpy.app.version < (5, 0, 0) and bpy.app.version >= (4, 5, 0):
+				col.prop(node, "mask_type", text = "Mask Type")
 				if not any(link.to_node == node for link in node_group.links):
 					col.prop(node.inputs[0], 'default_value', text="Mask")
 				row = col.row(align=True)
@@ -437,6 +486,7 @@ def draw_mask(self, context, box):
 				col.prop(node.inputs[4], 'default_value', text="Rotation")
 				col.prop(node.inputs[1], 'default_value', text="Value")
 			elif bpy.app.version < (4, 5, 0):
+				col.prop(node, "mask_type", text = "Mask Type")
 				if not any(link.to_node == node for link in node_group.links):
 					col.prop(node.inputs[0], 'default_value', text="Mask")
 				row = col.row(align=True)
@@ -447,6 +497,7 @@ def draw_mask(self, context, box):
 				row.prop(node, 'mask_height', text="Height", slider=True)
 				col.prop(node, 'rotation', text="Rotation")
 				col.prop(node.inputs[1], 'default_value', text="Value")
+				
 
 classes = (
 	Mask_Props,
