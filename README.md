@@ -16,6 +16,7 @@ It's not just simply adding a filter on the screen. You can composite it with AO
 * Copy and paste a layer or effects between two compositor.
 * Dynamic Search Box
 * Save and share your custom effects.
+* Save and share your compositor(5.0 or Higher).
 * Ease understandable nodetree.
 * And more...
 
@@ -46,25 +47,40 @@ This addon provides a system and pipeline; it won't provide many more feature no
 ![Image](https://i.imgur.com/8Cce8EO.gif)
 
 # Link socket for the effect
-* Allows you to control the effect value with a layer.
+* Allows you to control the effect value with a layer).
 
 ![Image](https://imgur.com/NYiZJwG.png)
 
-# Save and share your custom effects
+# Save and share your custom effects or compositors
 * Custom effect requires node group type and one 'Image' input, and at least one output
-
 ![Image](https://i.imgur.com/9CRa0El.gif)
 
-* Load and export your effect presets (Notice, effect presets are .blend files)
+* Incorporate a Compositor presets system combined with 5.0 Compositor assets (5.0 or Higher).
+![Image](https://imgur.com/fkreRXB.png)
+
+* Load and export your presets (Notice, presets are .blend files)
   
 ![Image](https://imgur.com/is00lAn.png)
+
+# Combine the new Output system with a 5.0 File output (5.0 or higher).
+* It is combined with the new 5.0 file output, allowing you to render every single layer.
+![image](https://imgur.com/02RHGd3.png)
 
 # Preference
 ![Image](https://i.imgur.com/Wt7tIgx.png)
 
 # Future
-* Save compositor preset
-* Better output system
+* Bring the Source Panel back in 5.0
+* Support Sequence compositor
+
+# Compatibility
+Layer Comp is compatible with older Blender versions, starting from Blender 4.2. But the best use of the addon is the least version, some features and nodes aren't available in 4.4 or below.
+
+Legacy and 5.0 compositor systems cannot be used in the same project.
+
+The Legacy Compositor System may not fully function in all its features in version 5.0 or higher. It is recommended to use the 5.0 system with the latest update.
+
+The future update will no longer cover the legacy compositor system.
 
 # Compatibility
 Layer Comp is compatible with older Blender versions, starting from Blender 4.2. But the best use of the addon is version 4.5, some features and nodes aren't available in 4.4 or below.
