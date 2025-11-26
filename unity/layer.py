@@ -431,6 +431,16 @@ class Add_OT_Layer(bpy.types.Operator):
 			
 			input_node = None
 
+		elif self.type == "Compositor":
+			input_node = node_group.nodes.new("CompositorNodeGroup")
+			input_node.node_tree = bpy.data.node_groups[self.name]
+			input_node.name = source_name
+			input_node.parent = frame
+			
+			# Connect GroupInput to Transform node
+			output = get_outputs(input_node, None)
+			node_group.links.new(transform_node.inputs[0], output)
+
 		else:
 			input_node = node_group.nodes.new(self.type)
 			input_node.name = source_name
@@ -1268,7 +1278,7 @@ class COMPOSITOR_MT_add_source_layer(bpy.types.Menu):
 		compositor = node_group.compositor_props
 		layout = self.layout
 		for i, item in enumerate(props.source):
-			if item.type == 'COMPOSITOR':
+			if item.type in {'COMPOSITOR', 'COMPOSITING'}:
 				if item.name == compositor.name:
 					continue
 				else:
@@ -1293,10 +1303,11 @@ class COMPOSITOR_MT_add_comp_layer(bpy.types.Menu):
 	def draw(self, context):
 		layout = self.layout
 		for item in bpy.data.node_groups:
-			if item.type == 'COMPOSITOR' and item.name != context.scene.compositing_node_group.name:
-				add = layout.operator("scene.comp_add_layer_socket", text=item.name, icon="NODE_COMPOSITING")
+			if item.compositor_props.name != '' and item.name != context.scene.compositing_node_group.name:
+				add = layout.operator("scene.comp_add_layer", text=item.name, icon="NODE_COMPOSITING")
 				add.name = item.name
-				add.icon = item.icon
+				add.type = "Compositor"
+				add.icon = "NODE_COMPOSITING"
 
 class COMPOSITOR_MT_add_texture_layer(bpy.types.Menu):
 	bl_label = "Texture"
@@ -1385,14 +1396,18 @@ def draw_layer(self, context, box):
 		sub.operator("scene.comp_duplicate_layer", text="", icon='DUPLICATE').index = compositor.layer_index
 		row.operator("scene.comp_remove_layer", text="", icon='X').index = compositor.layer_index
 		xbox = box.box()
-		xbox.label(text = "Properties", icon = "PROPERTIES")
+		xrow = xbox.row()
+		xrow.label(text = "Properties", icon = "PROPERTIES")
+		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
+			if item.type == "Compositor" and bpy.data.node_groups.get(item.source):
+				xrow.operator("scene.comp_edit_source", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
+		else:
+			if bpy.data.node_groups.get(item.source):
+				xrow.operator("scene.comp_edit_source", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
 
 		mix_node = node_group.nodes.get(f"{item.name}.Mix")
 		sub_mix_node = node_group.nodes.get(f"{item.name}.Mix_Sub")
 		transform_node = node_group.nodes.get(f"{item.name}.Transform")
-	
-		if bpy.data.node_groups.get(item.source):
-			xbox.operator("scene.comp_edit_source", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
 
 		if addon_prefs.panel_type == "Expand":
 			row = xbox.row()

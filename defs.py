@@ -92,6 +92,7 @@ def get_presets_item(preset, type):
 	with bpy.data.libraries.load(blendfile, link=False) as (data_from, data_to):
 		for node_group in data_from.node_groups:
 			items.append(node_group)
+		
 	return items
 
 def get_filepath(type):

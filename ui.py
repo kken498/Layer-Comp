@@ -117,16 +117,17 @@ class Compositor_Layer:
 							if len(items) > 0:
 								sub = panel_box.column()
 								for item in items:
-									row = sub.row()
-									if type == "Compositors":
-										add = row.operator("scene.comp_apply_preset_item", text='', icon = "ADD", emboss=False)
-										add.preset = preset
-										add.target = item
-									row.label(text=item, icon = "SHADERFX" if type == 'Effects' else "NODE_COMPOSITING")
-									remove = row.operator("scene.comp_remove_preset_item", text='', icon = "REMOVE", emboss=False)
-									remove.preset = preset
-									remove.target = item
-									remove.type = type
+									if not item.startswith(".*"):
+										row = sub.row()
+										if type == "Compositors":
+											add = row.operator("scene.comp_apply_preset_item", text='', icon = "ADD", emboss=False)
+											add.preset = preset
+											add.target = item
+										row.label(text=item, icon = "SHADERFX" if type == 'Effects' else "NODE_COMPOSITING")
+										remove = row.operator("scene.comp_remove_preset_item", text='', icon = "REMOVE", emboss=False)
+										remove.preset = preset
+										remove.target = item
+										remove.type = type
 							else:
 								panel_box.label(text="Preset has item", icon = "FILEBROWSER")
 				else:

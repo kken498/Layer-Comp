@@ -998,7 +998,10 @@ class COMPOSITOR_MT_add_effects_adjustment(CompositorAddMenu, bpy.types.Menu):
 	def draw(self, context):
 		layout = self.layout
 		self.operator_add_effect(layout, "CompositorNodeBrightContrast")
-		self.operator_add_effect(layout, "CompositorNodeValToRGB")
+		if bpy.app.version >= (5, 0, 0):
+			self.operator_add_effect(layout, "ShaderNodeValToRGB")
+		else:
+			self.operator_add_effect(layout, "CompositorNodeValToRGB")
 		self.operator_add_effect(layout, "CompositorNodeColorBalance")
 		self.operator_add_effect(layout, "CompositorNodeColorCorrection")
 		self.operator_add_effect(layout, "CompositorNodeExposure")
