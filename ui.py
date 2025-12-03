@@ -142,6 +142,8 @@ class NODE_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):
 
 	@classmethod
 	def poll(cls, context):
+		if bpy.app.version >= (5, 0, 0) and context.space_data.node_tree_sub_type != 'SCENE':
+			return False
 		return context.area.ui_type == 'CompositorNodeTree'
 
 class VIEW_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):

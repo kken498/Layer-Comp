@@ -259,7 +259,7 @@ class Save_OT_Preset(bpy.types.Operator):
 
 		# Get preset filepath
 		filepath = get_filepath(self.type)
-		blendfile  = os.path.join(filepath, f"{self.preset}.blend")
+		blendfile = os.path.join(filepath, f"{self.preset}.blend")
 
 		# Create a appended group list
 		appended_group = []

@@ -11,7 +11,7 @@ class AddonPref_Properties:
 							description = "Presets Type"
 									)
 	
-	compositor_type : bpy.props.EnumProperty(default = "Legacy",
+	compositor_type : bpy.props.EnumProperty(default = "5.0",
 							items = [('Legacy', 'Legacy', ''),
 									('5.0', '5.0', ''),
 									],

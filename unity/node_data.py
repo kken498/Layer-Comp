@@ -1,8 +1,18 @@
 
+effect_node_data_5_0 = {}
+effect_node_data_5_0['CompositorNodeColorBalance'] = ['Color Balance', 'MOD_WHITE_BALANCE']
+effect_node_data_5_0['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'MOD_BRIGHTNESS_CONTRAST']
+effect_node_data_5_0['CompositorNodeCurveRGB'] = ['RGB Curve', 'MOD_CURVES']
+effect_node_data_5_0['CompositorNodeHueCorrect'] = ['Hue Correct', 'MOD_HUE_CORRECT']
+effect_node_data_5_0['CompositorNodeTonemap'] = ['Tonemap', 'MOD_TONEMAP']
+
 effect_node_data = {}
 effect_node_data['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'IMAGE_ALPHA']
 effect_node_data['CompositorNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
+effect_node_data['ShaderNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
 effect_node_data['CompositorNodeColorBalance'] = ['Color Balance', 'COLOR']
+
+
 effect_node_data['CompositorNodeColorCorrection'] = ['Color Correction', 'SHADERFX']
 effect_node_data['CompositorNodeExposure'] = ['Exposure', 'SORTBYEXT']
 effect_node_data['CompositorNodeGamma'] = ['Gamma', 'SEQ_HISTOGRAM']
@@ -104,6 +114,7 @@ feature_node_data['CompositorNodeDropShadow'] = ['DropShadow', 'SELECT_SUBTRACT'
 feature_node_data['CompositorNodeInnerShadow'] = ['InnerShadow', 'SELECT_INTERSECT']
 feature_node_data['CompositorNodeRimLight'] = ['Rim Light', 'LIGHT_AREA']
 feature_node_data['CompositorNodeOuterGlow'] = ['Outer Glow', 'LIGHT_SUN']
+feature_node_data['CompositorNodeRelight'] = ['Relight', 'LIGHT_POINT']
 feature_node_data['CompositorNodeBoundaryLine'] = ['BoundaryLine', 'MOD_LINEART']
 feature_node_data['CompositorNodePaintFilter'] = ['Paint Filter', 'BRUSHES_ALL']
 feature_node_data['CompositorNodeSpotExposure'] = ['Spot Exposure', 'LIGHT_SPOT']

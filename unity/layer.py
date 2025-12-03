@@ -51,13 +51,23 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		mix_node = node_group.nodes.get(f"{self.name}.Mix")
-		if any(layer.solo for layer in compositor.layer):
-			if self.solo:
-				mix_node.mute = self.hide
+		if bpy.app.version >= (5, 0, 0):
+			if any(layer.solo for layer in compositor.layer):
+				if self.solo:
+					mix_node.inputs["Mute"].default_value = self.hide
+				else:
+					return
 			else:
-				return
-		else:
-			mix_node.mute = self.hide
+				mix_node.inputs["Mute"].default_value = self.hide
+
+		elif bpy.app.version < (5, 0, 0):
+			if any(layer.solo for layer in compositor.layer):
+				if self.solo:
+					mix_node.mute = self.hide
+				else:
+					return
+			else:
+				mix_node.mute = self.hide
 
 	def update_fx(self, context):
 		props = context.scene.compositor_layer_props
@@ -108,14 +118,25 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 		props = context.scene.compositor_layer_props
 		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
-		if any(layer.solo for layer in compositor.layer):
-			for layer in compositor.layer:
-				mix_node = node_group.nodes.get(f"{layer.name}.Mix")
-				mix_node.mute = not layer.solo
-		else:
-			for layer in compositor.layer:
-				mix_node = node_group.nodes.get(f"{layer.name}.Mix")
-				mix_node.mute = layer.hide
+		if bpy.app.version >= (5, 0, 0):
+			if any(layer.solo for layer in compositor.layer):
+				for layer in compositor.layer:
+					mix_node = node_group.nodes.get(f"{layer.name}.Mix")
+					mix_node.inputs["Mute"].default_value = not layer.solo
+			else:
+				for layer in compositor.layer:
+					mix_node = node_group.nodes.get(f"{layer.name}.Mix")
+					mix_node.inputs["Mute"].default_value = layer.hide
+
+		elif bpy.app.version < (5, 0, 0):
+			if any(layer.solo for layer in compositor.layer):
+				for layer in compositor.layer:
+					mix_node = node_group.nodes.get(f"{layer.name}.Mix")
+					mix_node.mute = not layer.solo
+			else:
+				for layer in compositor.layer:
+					mix_node = node_group.nodes.get(f"{layer.name}.Mix")
+					mix_node.mute = layer.hide
 
 	def label_item(self, context):
 		list = []
@@ -274,10 +295,17 @@ class LAYER_UL_LIST(bpy.types.UIList):
 					sub.label(text = "", icon = "BLANK1")
 
 			sub = xrow.row(align=True)
-			if addon_prefs.blend_mode:
-				sub.prop(mix_node, 'blend_type', text="")
-			if addon_prefs.mix:
-				sub.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
+			if bpy.app.version >= (5, 0, 0):
+				if addon_prefs.blend_mode:
+					sub.prop(mix_node.inputs[0], 'default_value', text="")
+				if addon_prefs.mix:
+					sub.prop(mix_node.inputs[1], 'default_value', text="Opacity")
+
+			if bpy.app.version < (5, 0, 0):
+				if addon_prefs.blend_mode:
+					sub.prop(mix_node, 'blend_type', text="")
+				if addon_prefs.mix:
+					sub.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
 
 			row.operator("scene.comp_drag_layer", text="", icon='LAYER_ACTIVE' if item.drag else 'COLLAPSEMENU', emboss = False).index = item.index
 
@@ -347,27 +375,113 @@ class Add_OT_Layer(bpy.types.Operator):
 		frame.name = f"{source_name}.Frame"
 		frame.label = source_name
 
-		# Create Mix node
-		mix_node = create_mix_node(node_group)
-		mix_node.name = f"{source_name}.Mix"
-		mix_node.parent = frame
-
-		# Create Sub Mix node
-		sub_mix_node = create_mix_node(node_group)
-		sub_mix_node.name = f"{source_name}.Mix_Sub"
-		sub_mix_node.inputs[0].default_value = 1
-		if bpy.app.version >= (4, 5, 0):
-			sub_mix_node.data_type = 'FLOAT'
-			sub_mix_node.inputs[3].default_value = 1
-		elif bpy.app.version < (4, 5, 0):
-			sub_mix_node.inputs[1].default_value = (0,0,0,0)
-			sub_mix_node.inputs[2].default_value = (1,1,1,1)
-		sub_mix_node.parent = frame
-
-		# Create Transform node
 		if bpy.app.version >= (5, 0, 0):
-			transform_node = append_node('Presets', ".*Transform", 'v5_0', node_group.nodes)
-		else:
+			mix_node = append_node('Presets', ".*Mix Layer", 'v5_0', node_group.nodes)
+			mix_node.name = f"{source_name}.Mix"
+			mix_node.parent = frame
+
+			if self.type == "Source":
+				group_node = tree.nodes[compositor.name]
+				
+				GroupInput = node_group.nodes.new("NodeGroupInput")
+				GroupInput.name = f"{source_name}.GroupInput"
+				GroupInput.parent = frame
+
+				source_node = tree.nodes[self.name]
+				if self.socket:
+					output = source_node.outputs[self.socket]
+				else:
+					output = get_outputs(source_node, None)
+
+				# Check is source sokect used. If not, create new socket
+				if self.socket:
+					input_name = f'{self.name}({self.socket})'
+				else:
+					input_name = self.name
+				if not group_node.inputs.get(input_name):
+					input = node_group.interface.new_socket(name=input_name, in_out='INPUT', socket_type=output.bl_idname)
+					input.hide_value = True
+
+				# Connect source output to the source input of the group node
+				tree.links.new(output, group_node.inputs[input_name])
+
+				# Connect GroupInput to Transform node
+				node_group.links.new(mix_node.inputs[3], GroupInput.outputs[input_name])
+
+				input_node = None
+
+			elif self.type == "Adjustment":
+				if len(compositor.layer) == 0:
+					GroupInput = node_group.nodes.new("NodeGroupInput")
+					GroupInput.name = f"{source_name}.GroupInput"
+					GroupInput.parent = frame
+
+					# Connect GroupInput to Transform node
+					node_group.links.new(mix_node.inputs[3], GroupInput.outputs[0])
+				else:
+					last_layer = compositor.layer[-1]
+					last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
+					node_group.links.new(mix_node.inputs[3], last_mix.outputs[0])
+				
+				input_node = None
+
+			elif self.type == "Compositor":
+				input_node = node_group.nodes.new("CompositorNodeGroup")
+				input_node.node_tree = bpy.data.node_groups[self.name]
+				input_node.name = source_name
+				input_node.parent = frame
+				
+				# Connect GroupInput to Transform node
+				output = get_outputs(input_node, None)
+				node_group.links.new(mix_node.inputs[3], output)
+
+			else:
+				input_node = node_group.nodes.new(self.type)
+				input_node.name = source_name
+				input_node.parent = frame
+				
+				# Connect GroupInput to Transform node
+				output = get_outputs(input_node, None)
+				node_group.links.new(mix_node.inputs[3], output)
+
+			# Set alpha to mix node 1 if the layer is single layer
+			if len(compositor.layer) == 0:
+				node_group.links.new(mix_node.inputs[2], GroupInput.outputs[0])
+			else:
+				# Connect mix node from last layer 
+				last_layer = compositor.layer[len(compositor.layer)-1]
+				last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
+
+				node_group.links.new(mix_node.inputs[2], last_mix_node.outputs[0])
+
+			if input_node:
+				input_node.location = (mix_node.location[0] - 250, mix_node.location[1] - 100)
+			else:
+				GroupInput.location = (mix_node.location[0] - 250, mix_node.location[1] - 100)
+
+			node_group.links.new(GroupOutput.inputs[0], mix_node.outputs[0])
+
+		if bpy.app.version < (5, 0, 0):
+
+			# Create Mix node
+			mix_node = create_mix_node(node_group)
+			mix_node.name = f"{source_name}.Mix"
+			mix_node.parent = frame
+
+			# Create Sub Mix node
+			sub_mix_node = create_mix_node(node_group)
+			sub_mix_node.name = f"{source_name}.Mix_Sub"
+			sub_mix_node.inputs[0].default_value = 1
+			if bpy.app.version >= (4, 5, 0):
+				sub_mix_node.data_type = 'FLOAT'
+				sub_mix_node.inputs[3].default_value = 1
+			elif bpy.app.version < (4, 5, 0):
+				sub_mix_node.inputs[1].default_value = (0,0,0,0)
+				sub_mix_node.inputs[2].default_value = (1,1,1,1)
+			sub_mix_node.parent = frame
+
+			# Create Transform node
+		
 			__transform = bpy.data.node_groups.get(".*Transform")
 
 			if not __transform:
@@ -376,98 +490,98 @@ class Add_OT_Layer(bpy.types.Operator):
 			transform_node = node_group.nodes.new("CompositorNodeGroup")
 			transform_node.node_tree = __transform
 
-			
-		transform_node.name = f"{source_name}.Transform"
-		transform_node.parent = frame
-
-		# Connect GroupInput to Transform node
-		node_group.links.new(get_mix_node_inputs(mix_node, 2), transform_node.outputs[0])
-
-		# Connect Mix node
-		node_group.links.new(mix_node.inputs[0], get_mix_node_outputs(sub_mix_node))
-
-		if self.type == "Source":
-			group_node = tree.nodes[compositor.name]
-			
-			GroupInput = node_group.nodes.new("NodeGroupInput")
-			GroupInput.name = f"{source_name}.GroupInput"
-			GroupInput.parent = frame
-
-			source_node = tree.nodes[self.name]
-			if self.socket:
-				output = source_node.outputs[self.socket]
-			else:
-				output = get_outputs(source_node, None)
-
-			# Check is source sokect used. If not, create new socket
-			if self.socket:
-				input_name = f'{self.name}({self.socket})'
-			else:
-				input_name = self.name
-			if not group_node.inputs.get(input_name):
-				input = node_group.interface.new_socket(name=input_name, in_out='INPUT', socket_type=output.bl_idname)
-				input.hide_value = True
-
-			# Connect source output to the source input of the group node
-			tree.links.new(output, group_node.inputs[input_name])
+				
+			transform_node.name = f"{source_name}.Transform"
+			transform_node.parent = frame
 
 			# Connect GroupInput to Transform node
-			node_group.links.new(transform_node.inputs[0], GroupInput.outputs[input_name])
+			node_group.links.new(get_mix_node_inputs(mix_node, 2), transform_node.outputs[0])
 
-			input_node = None
+			# Connect Mix node
+			node_group.links.new(mix_node.inputs[0], get_mix_node_outputs(sub_mix_node))
 
-		elif self.type == "Adjustment":
-			if len(compositor.layer) == 0:
+			if self.type == "Source":
+				group_node = tree.nodes[compositor.name]
+				
 				GroupInput = node_group.nodes.new("NodeGroupInput")
 				GroupInput.name = f"{source_name}.GroupInput"
 				GroupInput.parent = frame
 
+				source_node = tree.nodes[self.name]
+				if self.socket:
+					output = source_node.outputs[self.socket]
+				else:
+					output = get_outputs(source_node, None)
+
+				# Check is source sokect used. If not, create new socket
+				if self.socket:
+					input_name = f'{self.name}({self.socket})'
+				else:
+					input_name = self.name
+				if not group_node.inputs.get(input_name):
+					input = node_group.interface.new_socket(name=input_name, in_out='INPUT', socket_type=output.bl_idname)
+					input.hide_value = True
+
+				# Connect source output to the source input of the group node
+				tree.links.new(output, group_node.inputs[input_name])
+
 				# Connect GroupInput to Transform node
-				node_group.links.new(transform_node.inputs[0], GroupInput.outputs[0])
+				node_group.links.new(transform_node.inputs[0], GroupInput.outputs[input_name])
+
+				input_node = None
+
+			elif self.type == "Adjustment":
+				if len(compositor.layer) == 0:
+					GroupInput = node_group.nodes.new("NodeGroupInput")
+					GroupInput.name = f"{source_name}.GroupInput"
+					GroupInput.parent = frame
+
+					# Connect GroupInput to Transform node
+					node_group.links.new(transform_node.inputs[0], GroupInput.outputs[0])
+				else:
+					last_layer = compositor.layer[-1]
+					last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
+					node_group.links.new(transform_node.inputs[0], last_mix.outputs[0])
+				
+				input_node = None
+
+			elif self.type == "Compositor":
+				input_node = node_group.nodes.new("CompositorNodeGroup")
+				input_node.node_tree = bpy.data.node_groups[self.name]
+				input_node.name = source_name
+				input_node.parent = frame
+				
+				# Connect GroupInput to Transform node
+				output = get_outputs(input_node, None)
+				node_group.links.new(transform_node.inputs[0], output)
+
 			else:
-				last_layer = compositor.layer[-1]
-				last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
-				node_group.links.new(transform_node.inputs[0], last_mix.outputs[0])
-			
-			input_node = None
+				input_node = node_group.nodes.new(self.type)
+				input_node.name = source_name
+				input_node.parent = frame
+				
+				# Connect GroupInput to Transform node
+				output = get_outputs(input_node, None)
+				node_group.links.new(transform_node.inputs[0], output)
 
-		elif self.type == "Compositor":
-			input_node = node_group.nodes.new("CompositorNodeGroup")
-			input_node.node_tree = bpy.data.node_groups[self.name]
-			input_node.name = source_name
-			input_node.parent = frame
-			
-			# Connect GroupInput to Transform node
-			output = get_outputs(input_node, None)
-			node_group.links.new(transform_node.inputs[0], output)
+			# Set alpha to mix node 1 if the layer is single layer
+			if len(compositor.layer) == 0:
+				node_group.links.new(get_mix_node_inputs(mix_node, 1), GroupInput.outputs[0])
+			else:
+				# Connect mix node from last layer 
+				last_layer = compositor.layer[len(compositor.layer)-1]
+				last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
 
-		else:
-			input_node = node_group.nodes.new(self.type)
-			input_node.name = source_name
-			input_node.parent = frame
-			
-			# Connect GroupInput to Transform node
-			output = get_outputs(input_node, None)
-			node_group.links.new(transform_node.inputs[0], output)
+				node_group.links.new(get_mix_node_inputs(mix_node, 1), get_mix_node_outputs(last_mix_node))
 
-		# Set alpha to mix node 1 if the layer is single layer
-		if len(compositor.layer) == 0:
-			node_group.links.new(get_mix_node_inputs(mix_node, 1), GroupInput.outputs[0])
-		else:
-			# Connect mix node from last layer 
-			last_layer = compositor.layer[len(compositor.layer)-1]
-			last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
+			sub_mix_node.location = (mix_node.location[0] - 150, mix_node.location[1] + 100)
+			transform_node.location = (mix_node.location[0] - 150, mix_node.location[1] - 100)
+			if input_node:
+				input_node.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
+			else:
+				GroupInput.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
 
-			node_group.links.new(get_mix_node_inputs(mix_node, 1), get_mix_node_outputs(last_mix_node))
-
-		sub_mix_node.location = (mix_node.location[0] - 150, mix_node.location[1] + 100)
-		transform_node.location = (mix_node.location[0] - 150, mix_node.location[1] - 100)
-		if input_node:
-			input_node.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
-		else:
-			GroupInput.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
-
-		node_group.links.new(GroupOutput.inputs[0], get_mix_node_outputs(mix_node))
+			node_group.links.new(GroupOutput.inputs[0], get_mix_node_outputs(mix_node))
 
 		# Add layer properties
 		item = compositor.layer.add()
@@ -624,7 +738,7 @@ class Add_OT_Layer_Media(bpy.types.Operator, ImportHelper):
 				else:
 					image = bpy.data.images.load(file_path)
 
-				bpy.ops.scene.comp_add_layer(name=image.name, icon="IMAGE", type="CompositorNodeImage")
+				bpy.ops.scene.comp_add_layer(name=image.name, icon="OUTLINER_OB_IMAGE", type="CompositorNodeImage")
 
 				image.use_fake_user = True
 
@@ -785,8 +899,10 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 		new_source_node = node_group.nodes.get(new_layer.name)
 
 		convert_node_data(mix_node, new_mix_node)
-		convert_node_data(sub_mix_node, new_sub_mix_node)
-		convert_node_data(transform_node, new_transform_node)
+		if sub_mix_node:
+			convert_node_data(sub_mix_node, new_sub_mix_node)
+		if transform_node:
+			convert_node_data(transform_node, new_transform_node)
 		if source_node and new_source_node:
 			convert_node_data(source_node, new_source_node)
 
@@ -1060,7 +1176,10 @@ class Move_OT_Layer(bpy.types.Operator):
 				if layer.effect:
 					input = get_inputs(node_group.nodes[f'{layer.name}.Effect.{layer.effect[0].name}'])
 				else:
-					input = node_group.nodes[f"{layer.name}.Transform"].inputs[0]
+					if bpy.app.version >= (5, 0, 0):
+						input = node_group.nodes[f"{layer.name}.Mix"].inputs[3]
+					else:
+						input = node_group.nodes[f"{layer.name}.Transform"].inputs[0]
 
 				node_group.links.new(get_mix_node_outputs(next_mix_node), input)
 
@@ -1130,7 +1249,10 @@ class Move_OT_Layer(bpy.types.Operator):
 				if last_layer.effect:
 					input = get_inputs(node_group.nodes[f'{last_layer.name}.Effect.{last_layer.effect[0].name}'])
 				else:
-					input = node_group.nodes[f"{last_layer.name}.Transform"].inputs[0]
+					if bpy.app.version >= (5, 0, 0):
+						input = node_group.nodes[f"{layer.name}.Mix"].inputs[3]
+					else:
+						input = node_group.nodes[f"{layer.name}.Transform"].inputs[0]
 
 				node_group.links.new(get_mix_node_outputs(mix_node), input)
 
@@ -1419,25 +1541,29 @@ def draw_layer(self, context, box):
 				col.use_property_split = True
 				col.use_property_decorate = False
 
-				col.prop(mix_node, 'blend_type', text="Blend Mode")
-				col.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
-				col.separator()
-				row = col.row(align=True)
-				row.prop(transform_node.inputs[1], 'default_value', text="Position")
-				row.prop(transform_node.inputs[2], 'default_value', text="")
-				row = col.row(align=True)
-				row.prop(transform_node.inputs[4], 'default_value', text="Scale")
-				row.prop(transform_node.inputs[5], 'default_value', text="")
-				col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
-				header, panel = col.panel(idname="Sampling", default_closed=True)
-				header.label(text = "Sampling")
-				if panel:
-					panel_col = panel.column()
-					panel_col.use_property_split = True
-					panel_col.use_property_decorate = False
-					panel_col.prop(transform_node.inputs[6], 'default_value', text="")
-					panel_col.prop(transform_node.inputs[7], 'default_value', text="")
-					panel_col.prop(transform_node.inputs[8], 'default_value', text="")
+				if bpy.app.version >= (5, 0, 0):
+					col.prop(mix_node.inputs[0], 'default_value', text="Blend")
+					col.prop(mix_node.inputs[1], 'default_value', text="Opacity")
+					col.separator()
+					row = col.row(align=True)
+					row.prop(mix_node.inputs[5], 'default_value', text="Position", index=0)
+					row.prop(mix_node.inputs[5], 'default_value', text="", index=1)
+					row = col.row(align=True)
+					row.prop(mix_node.inputs[7], 'default_value', text="Scale", index=0)
+					row.prop(mix_node.inputs[7], 'default_value', text="", index=1)
+					col.prop(mix_node.inputs[6], 'default_value', text="Rotation")
+
+				if bpy.app.version < (5, 0, 0):
+					col.prop(mix_node, 'blend_type', text="Blend Mode")
+					col.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
+					col.separator()
+					row = col.row(align=True)
+					row.prop(transform_node.inputs[1], 'default_value', text="Position")
+					row.prop(transform_node.inputs[2], 'default_value', text="")
+					row = col.row(align=True)
+					row.prop(transform_node.inputs[4], 'default_value', text="Scale")
+					row.prop(transform_node.inputs[5], 'default_value', text="")
+					col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
 
 				if item.type not in ["Source", "Adjustment"]:
 					node = node_group.nodes.get(item.name)

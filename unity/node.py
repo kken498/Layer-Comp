@@ -145,7 +145,14 @@ def create_mix_node(node_group):
 
 def get_mix_node_inputs(mix_node, input):
 	version = bpy.app.version
-	if version >= (4, 5, 0):
+	if version >= (5, 0, 0):
+		if input == 0:
+			inputs = mix_node.inputs[1]
+		elif input == 1:
+			inputs = mix_node.inputs[2]
+		elif input == 2:
+			inputs = mix_node.inputs[3]
+	elif version >= (4, 5, 0) and version < (5, 0, 0):
 		if input == 0:
 			inputs = mix_node.inputs[0]
 		elif input == 1:
@@ -158,7 +165,9 @@ def get_mix_node_inputs(mix_node, input):
 
 def get_mix_node_outputs(mix_node):
 	version = bpy.app.version
-	if version >= (4, 5, 0):
+	if version >= (5, 0, 0):
+		outputs = mix_node.outputs['Mix']
+	elif version >= (4, 5, 0) and version < (5, 0, 0):
 		outputs = mix_node.outputs['Result']
 	elif version < (4, 5, 0):
 		outputs = mix_node.outputs[0]

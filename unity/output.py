@@ -391,12 +391,8 @@ class Link_Layer_OT_FileOutput(bpy.types.Operator):
 		links = tree.links
 		output = tree.nodes.get(self.name)
 		if self.link != ' ':
-			if tree.nodes.get(f"{self.link}.Set_Matte"):
-				link = tree.nodes.get(f"{self.link}.Set_Matte")
-			else:
-				link = tree.nodes.get(f"{self.link}.Transform")
-
-			links.new(link.outputs[0], output.inputs[self.index])
+			link = tree.nodes.get(f"{self.link}.Mix")
+			links.new(link.outputs["Layer"], output.inputs[self.index])
 		else:
 			addon_prefs = get_addon_preference(context)
 			props = context.scene.compositor_layer_props
@@ -408,8 +404,10 @@ class Link_Layer_OT_FileOutput(bpy.types.Operator):
 			compositor = node_group.compositor_props.layer[-1].name
 
 			link = tree.nodes.get(f"{compositor}.Mix")
-			
-			links.new(link.outputs['Result'], output.inputs[self.index])
+			if bpy.app.version >= (5, 0, 0):
+				links.new(link.outputs['Mix'], output.inputs[self.index])
+			else:
+				links.new(link.outputs['Result'], output.inputs[self.index])
 
 		return {'FINISHED'}
 

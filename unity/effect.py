@@ -143,7 +143,13 @@ class Add_OT_Effect(bpy.types.Operator):
 
 		# Define nodes
 		node_group = bpy.data.node_groups[compositor.name]
-		transform_node = node_group.nodes.get(f"{layer.name}.Transform")
+		if bpy.app.version >= (5, 0, 0):
+			connect_node = node_group.nodes.get(f"{layer.name}.Mix")
+			input = connect_node.inputs[3]
+		elif bpy.app.version < (5, 0, 0):
+			connect_node= node_group.nodes.get(f"{layer.name}.Transform")
+			input = connect_node.inputs[0]
+		
 		frame = node_group.nodes.get(f"{layer.name}.Frame")
 
 		# Create effect node
@@ -155,21 +161,21 @@ class Add_OT_Effect(bpy.types.Operator):
 		effect_node = node_group.nodes.new(self.type)
 		effect_node.name = f'{layer.name}.Effect.{name}'
 		effect_node.parent = frame
-		effect_node.location = (transform_node.location[0], transform_node.location[1] - 100)
+		effect_node.location = (connect_node.location[0], connect_node.location[1] - 100)
 		
 		# Offset nodes
 		offset_node(node_group, effect_node, 'X', 200)
 
 		# Connect effect node
 		for link in node_group.links:
-			if link.to_socket == transform_node.inputs[0]:
+			if link.to_socket == input:
 				input_socket = link.from_socket
 				break
 
 		inputs = get_inputs(effect_node)
 
 		node_group.links.new(input_socket, inputs)
-		node_group.links.new(effect_node.outputs[0], transform_node.inputs[0])
+		node_group.links.new(effect_node.outputs[0], input)
 
 		# Set propterties
 		item = layer.effect.add()
@@ -203,7 +209,13 @@ class Append_OT_Effect(bpy.types.Operator):
 
 		# Define nodes
 		node_group = bpy.data.node_groups[compositor.name]
-		transform_node = node_group.nodes.get(f"{layer.name}.Transform")
+		if bpy.app.version >= (5, 0, 0):
+			connect_node = node_group.nodes.get(f"{layer.name}.Mix")
+			input = connect_node.inputs[3]
+		elif bpy.app.version < (5, 0, 0):
+			connect_node= node_group.nodes.get(f"{layer.name}.Transform")
+			input = connect_node.inputs[0]
+
 		frame = node_group.nodes.get(f"{layer.name}.Frame")
 
 		existing_names = [item.name for item in layer.effect]
@@ -218,21 +230,21 @@ class Append_OT_Effect(bpy.types.Operator):
 		effect_node = append_node(self.file, self.name, f'{self.type}', node_group.nodes)
 		effect_node.name = f'{layer.name}.Effect.{name}'
 		effect_node.parent = frame
-		effect_node.location = transform_node.location
+		effect_node.location = connect_node.location
 		
 		# Offset nodes
 		offset_node(node_group, effect_node, 'X', 200)
 
 		# Connect effect node
 		for link in node_group.links:
-			if link.to_socket == transform_node.inputs[0]:
+			if link.to_socket == input:
 				input_socket = link.from_socket
 				break
 
 		inputs = get_inputs(effect_node)
 
 		node_group.links.new(input_socket, inputs)
-		node_group.links.new(effect_node.outputs[0], transform_node.inputs[0])
+		node_group.links.new(effect_node.outputs[0], input)
 
 		# Set propterties
 		item = layer.effect.add()
@@ -934,7 +946,16 @@ class CompositorAddMenu:
 	def operator_add_effect(cls, layout, name):
 		version = bpy.app.version
 		if version >= (5, 0, 0):
-			if name in effect_node_data:
+			if name in effect_node_data_5_0:
+				data = effect_node_data_5_0[name]
+				layout.operator(
+					"scene.comp_add_effect",
+					text=data[0],
+					text_ctxt=data[0],
+					icon=data[1],
+				).type = name
+
+			elif name in effect_node_data:
 				data = effect_node_data[name]
 				layout.operator(
 					"scene.comp_add_effect",
@@ -964,6 +985,7 @@ class CompositorAddMenu:
 class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Effect"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
+	menu_path = "Root"
 
 	def draw(self, context):
 		version = bpy.app.version
@@ -989,8 +1011,15 @@ class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 			layout.menu("COMPOSITOR_MT_add_effects_features_other")
 		layout.separator()
 		layout.menu("COMPOSITOR_MT_add_effects_presets", icon="PRESET")
-		#self.draw_root_assets(layout)
 
+		'''
+		layout.separator()
+		layout.label(text="Asset Broswer", icon="ASSET_MANAGER")
+		if version >= (5, 0, 0):
+			from bl_ui import node_add_menu
+			layout.menu_contents(node_add_menu.AddNodeMenu.root_asset_menu)
+		'''
+			
 class COMPOSITOR_MT_add_effects_adjustment(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Adjustment"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -1118,6 +1147,8 @@ class COMPOSITOR_MT_add_effects_features_color(CompositorAddMenu, bpy.types.Menu
 		self.operator_add_effect(layout, "CompositorNodeInnerShadow")
 		self.operator_add_effect(layout, "CompositorNodeRimLight")
 		self.operator_add_effect(layout, "CompositorNodeOuterGlow")
+		if bpy.app.version >= (5, 0, 0):
+			self.operator_add_effect(layout, "CompositorNodeRelight")
 		self.operator_add_effect(layout, "CompositorNodeBoundaryLine")
 		self.operator_add_effect(layout, "CompositorNodeSeparateRGBA")
 
@@ -1128,16 +1159,16 @@ class COMPOSITOR_MT_add_effects_features_looks(CompositorAddMenu, bpy.types.Menu
 	def draw(self, context):
 		version = bpy.app.version
 		layout = self.layout
-		if bpy.app.version >= (5, 0, 0):
-			self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeSpotExposure")
 		self.operator_add_effect(layout, "CompositorNodeCameraLensBlur")
+		if version >= (4, 5, 0):
+			self.operator_add_effect(layout, "CompositorNodeSwingTilt")
 		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
 		self.operator_add_effect(layout, "CompositorNodeVignette")
 		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
-		self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
 		self.operator_add_effect(layout, "CompositorNodeHalation")
+		self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeBlurRGB")
 		if version >= (4, 5, 0):
 			self.operator_add_effect(layout, "CompositorNodeTwitch")
