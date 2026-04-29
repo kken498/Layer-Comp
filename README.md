@@ -11,18 +11,20 @@ It's not just simply adding a filter on the screen. You can composite it with AO
 * Support Multiple Compositing.
 * Support Adjustment Layer and Matte Layer
 * Multiple Mask control for each layer.
-* More than 10+ feature ndoes.
+* More than 10+ feature nodes.
 * Control the effect value with the layer.
-* Copy and paste a layer or effects between two compositor.
+* Copy and paste a layer or effects between two compositors.
 * Dynamic Search Box
 * Save and share your custom effects.
 * Save and share your compositor(5.0 or Higher).
 * Ease understandable nodetree.
+* Solve the alpha clipping problem.
 * And more...
 
 # Location
 * View 3D > Sidebar > Layer Comp
 * Compositor > Sidebar > Layer Comp
+* Image Editor > Sidebar > Layer Comp
 
 # Documentation
 The extension was developed within an Anime workflow primarily using After Effects. Some simple compositing was required, which I hoped to accomplish using Blender.
@@ -39,45 +41,40 @@ This addon provides a system and pipeline; it won't provide many more feature no
   
 ![Image](https://i.imgur.com/KhDQYhc.gif)
 
-* Label your layer(version 4.4 or higher)
+* Label your layer
 
 ![Image](https://i.imgur.com/gtfdEbH.gif)
 
 # Dynamic Search Box
+
 ![Image](https://i.imgur.com/8Cce8EO.gif)
 
+# Simple Color Space Transform
+
+![Image](https://imgur.com/fMy4rbp.png)
+
+![Image](https://imgur.com/NjI9v7R.png)
+
 # Link socket for the effect
-* Allows you to control the effect value with a layer).
+* Allows you to control the effect value with a layer.
 
 ![Image](https://imgur.com/NYiZJwG.png)
 
 # Save and share your custom effects or compositors
 * Custom effect requires node group type and one 'Image' input, and at least one output
-![Image](https://i.imgur.com/9CRa0El.gif)
 
-* Incorporate a Compositor presets system combined with 5.0 Compositor assets (5.0 or Higher).
-![Image](https://imgur.com/fkreRXB.png)
+![Image](https://i.imgur.com/9CRa0El.gif)
 
 * Load and export your presets (Notice, presets are .blend files)
   
 ![Image](https://imgur.com/is00lAn.png)
 
-# Combine the new Output system with a 5.0 File output (5.0 or higher).
-* It is combined with the new 5.0 file output, allowing you to render every single layer.
-![image](https://imgur.com/02RHGd3.png)
-
 # Preference
 ![Image](https://i.imgur.com/Wt7tIgx.png)
 
 # Future
-* Bring the Source Panel back in 5.0
 * Support Sequence compositor
 
 # Compatibility
-Layer Comp is compatible with older Blender versions, starting from Blender 4.2. But the best use of the addon is the least version, some features and nodes aren't available in 4.4 or below.
-
-Legacy and 5.0 compositor systems cannot be used in the same project.
-
-The Legacy Compositor System may not fully function in all its features in version 5.0 or higher. It is recommended to use the 5.0 system with the latest update.
-
-The future update will no longer cover the legacy compositor system.
+The latest version is only compatible with version 5.0 or higher.
+If you are using the latest version in an older project, please delete the old composition and create a new one.
