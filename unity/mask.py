@@ -241,7 +241,7 @@ class Copy_OT_Mask(bpy.types.Operator):
 		list = []
 		for i, item in enumerate(compositor.layer):
 			if item.mask:
-				list.append((str(i), item.name, '', item.icon, i))
+				list.append((str(i), item.name, '', item.label, i))
 		return list
 	
 	def mask_item(self, context):

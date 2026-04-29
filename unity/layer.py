@@ -153,18 +153,6 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 
 		return list
 	
-	def update_colorspace_items(self, context):
-		items = []
-		try:
-			node_type = bpy.types.CompositorNodeConvertColorSpace
-			prop = node_type.bl_rna.properties.get("to_color_space") or node_type.bl_rna.properties.get("from_color_space")
-			if prop:
-				for i, enum_item in enumerate(prop.enum_items):
-					items.append((enum_item.identifier, enum_item.name, enum_item.description, enum_item.icon, i))
-		except Exception:
-			pass
-		return items
-
 	def update_colorspace(self, context):
 		props = context.scene.compositor_layer_props
 		node_group = bpy.data.node_groups[props.compositor_panel]
@@ -780,12 +768,9 @@ class Copy_OT_Layer(bpy.types.Operator):
 		node_group = bpy.data.node_groups[self.compositor]
 		compositor = node_group.compositor_props
 		list = []
-		if bpy.app.version >= (4, 4, 0):
-			list.append(('All', 'All', '', 'STRIP_COLOR_01', 0))
-		else:
-			list.append(('All', 'All', '', 'SEQUENCE_COLOR_01', 0))
+		list.append(('All', 'All', '', 'STRIP_COLOR_01', 0))
 		for i, item in enumerate(compositor.layer):
-			list.append((str(i), item.name, '', item.icon, i+1))
+			list.append((str(i), item.name, '', item.label, i+1))
 		return list
 	
 	compositor : bpy.props.EnumProperty(

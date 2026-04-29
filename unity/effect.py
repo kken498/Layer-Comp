@@ -605,7 +605,7 @@ class Copy_OT_Effect(bpy.types.Operator):
 		list = []
 		for i, item in enumerate(compositor.layer):
 			if item.effect:
-				list.append((str(i), item.name, '', item.icon, i))
+				list.append((str(i), item.name, '', item.label, i))
 		return list
 	
 	def effect_item(self, context):
@@ -751,7 +751,7 @@ class Link_OT_Effect_Layer(bpy.types.Operator):
 			if item.matte == layer.name:
 				continue
 			if item.name != layer.name and not item.name in linked_list:
-				list.append((str(i), item.name, '', item.icon, i))
+				list.append((str(i), item.name, '', item.label, i))
 
 		return list
 	
@@ -807,7 +807,7 @@ class Link_OT_Effect_Layer(bpy.types.Operator):
 			if item.matte == layer.name:
 				continue
 			if item.name != layer.name and not item.name in linked_list:
-				list.append((str(i), item.name, '', item.icon, i))
+				list.append((str(i), item.name, '', item.label, i))
 
 		return len(list) > 0
 
