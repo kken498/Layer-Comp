@@ -167,35 +167,41 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 
 	def draw(self, context):
 		addon_prefs = get_addon_preference(context)
-
 		layout = self.layout
-		layout.label(text="User Interface")
-		layout.use_property_split = True
-		layout.use_property_decorate = False
-			
-		col = layout.column(heading="Panel", align=True)
-		col.prop(addon_prefs, "view3d", text="3D Viewport Panel")
-		col.prop(addon_prefs, "active_node_panel", text="Active Node")
-		col.prop(addon_prefs, "preset_panel", text="Presets Panel")
-		col = layout.column(heading = "Compositor")
-		col.prop(addon_prefs, "search", text="Search Box")
-		row = col.row()
-		row.prop(addon_prefs, "layer_name", text="Layer Name", expand=True)
+		draw_options(addon_prefs, layout)
 
-		row = col.row(heading="Display", align=True)
-		row.prop(addon_prefs, "label", text="Label", toggle = True)
-		row.prop(addon_prefs, "fx_toggle", text="FX", toggle = True)
-		row.prop(addon_prefs, "blend_mode", text="Blend", toggle = True)
-		row.prop(addon_prefs, "mix", text="Mix", toggle = True)
-		col = layout.column(heading="Properties", align=True)
-		row = col.row()
-		row.prop(addon_prefs, "panel_type", text="Panel Type", expand=True)
-		layout.label(text="Operator")
-		col = layout.column(heading="", align=True)
-		col.row().prop(addon_prefs, "new_compositor_option", text="Add Render Layer", expand = True)
-		col = layout.column(heading="", align=True)
-		col.row().prop(addon_prefs, "duplicate_layer_option", text="Duplicate Layer", expand = True)
-		col.row().prop(addon_prefs, "duplicate_effect_option", text="Effect", expand = True)
+def draw_options(addon_prefs, layout):
+	layout.label(text="User Interface")
+	layout.use_property_split = True
+	layout.use_property_decorate = False
+		
+	col = layout.column(heading="Panel", align=True)
+	col.prop(addon_prefs, "view3d", text="3D Viewport Panel")
+	col.prop(addon_prefs, "active_node_panel", text="Active Node")
+	col.prop(addon_prefs, "preset_panel", text="Presets Panel")
+	col = layout.column(heading = "Compositor")
+	col.prop(addon_prefs, "search", text="Search Box")
+	col.prop(addon_prefs, "color_space", text="ColorSpace")
+	row = col.row()
+	row.prop(addon_prefs, "layer_name", text="Layer Name", expand=True)
+
+	row = col.row(heading="Display", align=True)
+	row.prop(addon_prefs, "label", text="Label", toggle = True)
+	row.prop(addon_prefs, "fx_toggle", text="FX", toggle = True)
+	row.prop(addon_prefs, "blend_mode", text="Blend", toggle = True)
+	row.prop(addon_prefs, "mix", text="Mix", toggle = True)
+
+	col = layout.column(heading="Properties", align=True)
+	row = col.row()
+	row.prop(addon_prefs, "panel_type", text="Panel Type", expand=True)
+
+	layout.label(text="Operator")
+	layout.prop(addon_prefs, "default_color_space", text="ColorSpace")
+	col = layout.column(heading="", align=True)
+	col.row().prop(addon_prefs, "new_compositor_option", text="Add Render Layer", expand = True)
+	col = layout.column(heading="", align=True)
+	col.row().prop(addon_prefs, "duplicate_layer_option", text="Duplicate Layer", expand = True)
+	col.row().prop(addon_prefs, "duplicate_effect_option", text="Effect", expand = True)
 
 classes = (
 	NODE_PT_Compositor_Layer,

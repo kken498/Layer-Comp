@@ -181,6 +181,8 @@ class Add_OT_Effect(bpy.types.Operator):
 
 		item.channel = get_outputs(effect_node, item).name
 
+		props.properties_panel = 'Effect'
+
 		bpy.ops.scene.comp_align_node_tree(name=node_group.name)
 
 		return {"FINISHED"}
@@ -955,11 +957,9 @@ class CompositorAddMenu:
 class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Effect"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
-	menu_path = "Root"
+
 
 	def draw(self, context):
-		version = bpy.app.version
-
 		layout = self.layout
 		if layout.operator_context == 'EXEC_REGION_WIN':
 			layout.operator_context = 'INVOKE_REGION_WIN'
@@ -978,19 +978,11 @@ class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 		layout.menu("COMPOSITOR_MT_add_effects_features_color")
 		layout.menu("COMPOSITOR_MT_add_effects_features_looks")
 		layout.menu("COMPOSITOR_MT_add_effects_features_3d")
-		if version >= (4, 5, 0):
-			layout.menu("COMPOSITOR_MT_add_effects_features_other")
+		layout.menu("COMPOSITOR_MT_add_effects_features_other")
 		layout.separator()
 		layout.menu("COMPOSITOR_MT_add_effects_presets", icon="PRESET")
+		#layout.menu("COMPOSITOR_MT_add_effects_asset_browser", icon="ASSET_MANAGER")
 
-		'''
-		layout.separator()
-		layout.label(text="Asset Broswer", icon="ASSET_MANAGER")
-		if version >= (5, 0, 0):
-			from bl_ui import node_add_menu
-			layout.menu_contents(node_add_menu.AddNodeMenu.root_asset_menu)
-		'''
-			
 class COMPOSITOR_MT_add_effects_adjustment(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Adjustment"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -1255,6 +1247,14 @@ class COMPOSITOR_MT_add_nodes_presets(bpy.types.Menu):
 		else:
 			layout.label(text="No Preset")
 
+class COMPOSITOR_MT_add_effects_asset_browser(bpy.types.Menu):
+	bl_label = "Asset Browser"
+	bl_options = {'SEARCH_ON_KEY_PRESS'}
+	menu_path = "Root"
+
+	def draw(self, context):
+		layout = self.layout
+
 class COMPOSITOR_MT_effects_specials(bpy.types.Menu):
 	bl_label = "Effect Specials"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -1276,6 +1276,14 @@ def draw_effect(self, context, box):
 	filtered = None
 	if compositor.search:
 		filtered = list(filter(lambda x: any(y in x for y in [compositor.search.lower()]), [effect.name.lower() for effect in layer.effect]))
+
+	if filtered:
+		row = box.row()
+		row.active = False
+		row.label(text=f'{len(filtered)} result(s) for "{compositor.search}"', icon='VIEWZOOM')
+		sub = row.column()
+		sub.alignment = 'RIGHT'
+		sub.label(text=f'{len(layer.effect) - len(filtered)} remaining')
 
 	for i, effect in enumerate(layer.effect):
 
@@ -1391,6 +1399,7 @@ classes = (
 	COMPOSITOR_MT_add_nodes_features_3d,
 	COMPOSITOR_MT_add_nodes_features_other,
 	COMPOSITOR_MT_add_nodes_presets,
+	COMPOSITOR_MT_add_effects_asset_browser,
 	COMPOSITOR_MT_effects_specials,
 		  )
 

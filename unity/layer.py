@@ -146,11 +146,11 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 				index = i+1
 			else:
 				index = i
-			if bpy.app.version >= (4, 4, 0):
-				icon = f'STRIP_COLOR_0{i+1}'
-			else:
-				icon = f'SEQUENCE_COLOR_0{i+1}'
-			list.append((icon, "", '', icon, index))
+			icon = f'STRIP_COLOR_0{i+1}'
+			list.append((icon, '', '', icon, index))
+		for i, item in enumerate(socket_data):
+			list.append((socket_data[item], '', '', socket_data[item], i+10))
+
 		return list
 	
 	def update_colorspace_items(self, context):
@@ -164,8 +164,6 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 		except Exception:
 			pass
 		return items
-
-	colorspace_items = [('ACES 1.3 sRGB', 'ACES 1.3 sRGB', 'ACES 1.0 Output Transform for SDR D65 video, limited to Rec.709 gamut', 'NONE', 0), ('ACES 2.0 sRGB', 'ACES 2.0 sRGB', 'ACES 2 Output Transform for 100 nit SDR Rec709', 'NONE', 1), ('ACES2065-1', 'ACES2065-1', 'Linear AP0 with ACES white point', 'NONE', 2), ('ACEScc', 'ACEScc', 'ACES color correction space, using AP1 primaries.', 'NONE', 3), ('ACEScct', 'ACEScct', 'ACES color correction space with toe, using AP1 primaries.', 'NONE', 4), ('ACEScg', 'ACEScg', 'Linear AP1 with ACES white point', 'NONE', 5), ('AgX Base sRGB', 'AgX Base sRGB', 'AgX Base Image Encoding for sRGB Display', 'NONE', 6), ('AgX Log', 'AgX Log', 'Log Encoding with Chroma inset and rotation of primaries, and with 25 Stops of Dynamic Range', 'NONE', 7), ('Display P3', 'Display P3', "Apple's Display P3 with sRGB compound (piece-wise) encoding transfer function, common on Mac devices", 'NONE', 8), ('Filmic Log', 'Filmic Log', 'Log based filmic shaper with 16.5 stops of latitude, and 25 stops of dynamic range', 'NONE', 9), ('Filmic sRGB', 'Filmic sRGB', 'sRGB display space with Filmic view transform', 'NONE', 10), ('Khronos PBR Neutral sRGB', 'Khronos PBR Neutral sRGB', 'Khronos PBR Neutral Image Encoding for sRGB Display', 'NONE', 11), ('Linear CIE-XYZ D65', 'Linear CIE-XYZ D65', '1931 CIE XYZ with adapted illuminant D65 white point', 'NONE', 12), ('Linear CIE-XYZ E', 'Linear CIE-XYZ E', '1931 CIE XYZ standard with assumed illuminant E white point', 'NONE', 13), ('Linear DCI-P3 D65', 'Linear DCI-P3 D65', 'Linear DCI-P3 with illuminant D65 white point', 'NONE', 14), ('Linear FilmLight E-Gamut', 'Linear FilmLight E-Gamut', 'Linear E-Gamut with illuminant D65 white point', 'NONE', 15), ('Linear Rec.2020', 'Linear Rec.2020', 'Linear BT.2020 with illuminant D65 white point', 'NONE', 16), ('Linear Rec.709', 'Linear Rec.709', 'Linear BT.709 with illuminant D65 white point', 'NONE', 17), ('Non-Color', 'Non-Color', 'Generic data that is not color, will not apply any color transform (e.g. normal maps)', 'NONE', 18), ('Rec.1886', 'Rec.1886', 'BT.1886 2.4 Exponent EOTF Display, commonly used for TVs', 'NONE', 19), ('Rec.2020', 'Rec.2020', 'BT.2020 2.4 Exponent EOTF Display', 'NONE', 20), ('Rec.2100-HLG', 'Rec.2100-HLG', 'Rec.2100-HLG 1000 nits peak display with reference white at 100 nits', 'NONE', 21), ('Rec.2100-PQ', 'Rec.2100-PQ', 'Rec.2100-PQ 10000 nits peak display with reference white at 100 nits', 'NONE', 22), ('sRGB', 'sRGB', 'sRGB IEC 61966-2-1 compound (piece-wise) encoding', 'NONE', 23), ('scene_linear', 'Working Space', 'Working color space of the current file', 'NONE', 24)]
 
 	def update_colorspace(self, context):
 		props = context.scene.compositor_layer_props
@@ -304,7 +302,7 @@ class LAYER_UL_LIST(bpy.types.UIList):
 			else:
 				hide = not item.hide
 
-			xrow = row.row()
+			xrow = row.row(align=True)
 			xrow.active = hide
 
 			sub = xrow.row(align=True)
@@ -381,6 +379,7 @@ class Add_OT_Layer(bpy.types.Operator):
 
 	def execute(self, context):
 		# Define props
+		addon_prefs = get_addon_preference(context)
 		props = context.scene.compositor_layer_props
 		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
@@ -499,6 +498,7 @@ class Add_OT_Layer(bpy.types.Operator):
 		item.socket = self.socket
 		item.type = self.type
 		item.index = len(compositor.layer) - 1
+		item.colorspace = addon_prefs.default_color_space
 
 		self.socket = ""
 
@@ -705,6 +705,8 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 		new_layer = compositor.layer[len(compositor.layer)-1]
 
 		new_layer.colorspace = layer.colorspace
+		new_layer.in_colorspace = layer.in_colorspace
+		new_layer.out_colorspace = layer.out_colorspace
 
 		if layer_matte[0] != "None":
 			new_layer.matte = layer_matte[0]
@@ -826,6 +828,8 @@ class Copy_OT_Layer(bpy.types.Operator):
 			new_layer.name = copy_layer.name
 
 			new_layer.colorspace = copy_layer.colorspace
+			new_layer.in_colorspace = copy_layer.in_colorspace
+			new_layer.out_colorspace = copy_layer.out_colorspace
 
 			if copy_layer_matte[0] != "None":
 				if any(copy_layer_matte[0] == layer.name for layer in compositor.layer):
@@ -876,6 +880,10 @@ class Copy_OT_Layer(bpy.types.Operator):
 				new_layer = compositor.layer[len(compositor.layer)-1]
 
 				new_layer.name = copy_layer.name
+
+				new_layer.colorspace = copy_layer.colorspace
+				new_layer.in_colorspace = copy_layer.in_colorspace
+				new_layer.out_colorspace = copy_layer.out_colorspace
 
 				mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix")
 				new_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix")
@@ -1301,7 +1309,20 @@ def draw_layer(self, context, box):
 	if addon_prefs.search:
 		sub = col.row(align=True)
 		sub.prop(compositor, "search", text="", icon = "VIEWZOOM")
-	col.template_list("LAYER_UL_LIST", "", compositor, "layer", compositor, "layer_index")
+
+	filtered = None
+	if compositor.search:
+		filtered = list(filter(lambda x: any(y in x for y in [compositor.search.lower()]), [layer.name.lower() for layer in compositor.layer]))
+
+	if filtered:
+		row = box.row()
+		row.active = False
+		row.label(text=f'{len(filtered)} result(s) for "{compositor.search}"', icon='VIEWZOOM')
+		sub = row.column()
+		sub.alignment = 'RIGHT'
+		sub.label(text=f'{len(compositor.layer) - len(filtered)} remaining')
+
+	box.template_list("LAYER_UL_LIST", "", compositor, "layer", compositor, "layer_index")
 	if len(compositor.layer) > 0:
 		item = compositor.layer[compositor.layer_index]
 		
@@ -1323,7 +1344,7 @@ def draw_layer(self, context, box):
 			row = xbox.row()
 			row.prop(props, 'properties_panel', expand=True)
 
-			if props.properties_panel != "Mask":
+			if addon_prefs.color_space and props.properties_panel != "Mask":
 				row = xbox.row(align=True)
 				row.label(text="In/Out ColorSpace", icon="FCURVE")
 				row.prop(item, "colorspace", text="")
@@ -1421,18 +1442,19 @@ def draw_layer(self, context, box):
 					if len(node.outputs) > 1:
 						panel_box.prop(item, "channel", text="Channel")
 
-			header, panel = xbox.panel(idname="In/Out ColorSpace", default_closed=True)
-			header.label(text="In/Out ColorSpace", icon="FCURVE")
-			row = header.row(align=True)
-			row.alignment = 'RIGHT'
-			row.prop(item, "colorspace", text="")
-			if panel:
-				panel_box = panel.box()
-				col = panel_box.column()
-				col.use_property_split = True
-				col.use_property_decorate = False
-				col.prop(item, "in_colorspace", text="Input")
-				col.prop(item, "out_colorspace", text="Output")
+			if addon_prefs.color_space:
+				header, panel = xbox.panel(idname="In/Out ColorSpace", default_closed=True)
+				header.label(text="In/Out ColorSpace", icon="FCURVE")
+				row = header.row(align=True)
+				row.alignment = 'RIGHT'
+				row.prop(item, "colorspace", text="")
+				if panel:
+					panel_box = panel.box()
+					col = panel_box.column()
+					col.use_property_split = True
+					col.use_property_decorate = False
+					col.prop(item, "in_colorspace", text="Input")
+					col.prop(item, "out_colorspace", text="Output")
 
 			header, panel = xbox.panel(idname="Effects", default_closed=False)
 			header.label(text = "Effects", icon = "SHADERFX")

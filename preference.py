@@ -1,5 +1,6 @@
 import bpy
 from .defs import *
+from .ui import *
 
 class AddonPref_Properties:
 	active_node_panel : bpy.props.BoolProperty(default = True, description = "Show active node panel in compositor area.")
@@ -26,6 +27,7 @@ class AddonPref_Properties:
 	view3d : bpy.props.BoolProperty(default = True, description = "Show Panel in 3D Viewport")
 
 	search : bpy.props.BoolProperty(default = True, description = "Search Layer in Compositor")
+	color_space : bpy.props.BoolProperty(default = True, description = "Show colorspace in Compositor")
 	
 	label : bpy.props.BoolProperty(default = True, description = "Show label icon in layer.")
 	fx_toggle : bpy.props.BoolProperty(default = True, description = "Show FX toggle in layer.")
@@ -52,6 +54,12 @@ class AddonPref_Properties:
 									],
 							description = "Duplicated item position."
 									)
+	
+	default_color_space : bpy.props.EnumProperty(
+						name='Color Space',
+						default='scene_linear',
+						items=colorspace_items,
+								)
 
 class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 	bl_idname = __package__
@@ -67,32 +75,9 @@ class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 		box = row.box()
 		box.use_property_split = True
 		box.use_property_decorate = False
-		box.scale_x= 0.4
-		
-		box.label(text="UI Settings")
-		col = box.column(heading="Panel", align=True)
-		col.prop(self, "view3d", text="3D Viewport Panel")
-		col.prop(self, "active_node_panel", text="Active Node")
-		col.prop(self, "preset_panel", text="Presets Panel")
-		col = box.column(heading = "Compositor")
-		col.prop(self, "search", text="Search Box")
-		sub = col.row()
-		sub.prop(self, "layer_name", text="Layer Name", expand=True)
-
-		sub = col.row(heading="Display", align=True)
-		sub.prop(self, "label", text="Label", toggle = True)
-		sub.prop(self, "fx_toggle", text="FX", toggle = True)
-		sub.prop(self, "blend_mode", text="Blend", toggle = True)
-		sub.prop(self, "mix", text="Mix", toggle = True)
-		col = box.column(heading="Properties", align=True)
-		sub = col.row()
-		sub.prop(self, "panel_type", text="Panel Type", expand=True)
-		box.label(text="Operator")
-		col = box.column(heading="", align=True)
-		col.row().prop(self, "new_compositor_option", text="Add Render Layer", expand = True)
-		col = box.column(heading="", align=True)
-		col.row().prop(self, "duplicate_layer_option", text="Duplicate Layer", expand = True)
-		col.row().prop(self, "duplicate_effect_option", text="Effect", expand = True)
+		box.scale_x = 0.4
+	
+		draw_options(self, box)
 
 		box = row.box()
 		colbox = box.column()
