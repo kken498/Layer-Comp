@@ -17,24 +17,14 @@ def offset_node(node_group, offset_node, type, offset):
 					node.location[1] = node.location[1] + offset				
 
 def get_scene_compositor(context):
-	tree = get_scene_tree(context)
-	addon_prefs = get_addon_preference(context)
 	compositor = []
-	if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-		for node in bpy.data.node_groups:
-			if node.compositor_props.name != "":
-				compositor.append(node.name)
-	else:
-		for node in tree.nodes:
-			if node.type == "GROUP" and node.node_tree.compositor_props.name != "":
-				compositor.append(node.node_tree.name)
+	for node in bpy.data.node_groups:
+		if node.compositor_props.name != "":
+			compositor.append(node.name)
 	return compositor
 
 def get_scene_tree(context):
-	if bpy.app.version >= (5, 0, 0):
-		tree = context.scene.compositing_node_group
-	else:
-		tree = context.scene.node_tree
+	tree = context.scene.compositing_node_group
 	return tree
 
 def get_all_icon():
@@ -69,7 +59,7 @@ def append_node(type, name, preset, nodes):
 
 	if name not in bpy.data.node_groups:
 		with bpy.data.libraries.load(blendfile) as (data_from, data_to):
-			data_to.node_groups = [name for name in data_from.node_groups if name == name]
+			data_to.node_groups = [name]
 
 	node_group = bpy.data.node_groups[name]
 	new_node = nodes.new("CompositorNodeGroup")
@@ -146,3 +136,22 @@ def get_outputs(node, item):
 			outputs = node.outputs[0]
 
 	return outputs
+
+def get_mix_node_inputs(mix_node, input):
+	if input == 0:
+		inputs = mix_node.inputs[1]
+	elif input == 1:
+		inputs = mix_node.inputs[2]
+	elif input == 2:
+		inputs = mix_node.inputs[3]
+	return inputs
+
+def get_mix_node_outputs(mix_node):
+	outputs = mix_node.outputs['Mix']
+	return outputs
+
+def get_invert_node_inputs(invert_node, input, value):
+	if input == 'Color':
+		invert_node.inputs[2].default_value = value
+	elif input == 'Alpha':
+		invert_node.inputs[3].default_value = value

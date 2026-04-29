@@ -90,17 +90,13 @@ class FILE_OUTPUT_UL_LIST(bpy.types.UIList):
 
 	def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
 		if self.layout_type in {'DEFAULT'}:
-			addon_prefs = get_addon_preference(context)
 			tree = get_scene_tree(context)
 			props = context.scene.compositor_layer_props
 			output = props.output[props.output_index]
 			output_node = tree.nodes[output.name]
 			
 			row = layout.row()
-			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-				row.prop(item, "name", text="", icon = socket_data[item.socket_type], emboss = False)
-			else:
-				row.prop(item, "path", text = "", emboss = False)
+			row.prop(item, "name", text="", icon = socket_data[item.socket_type], emboss = False)
 
 			from_node = None
 			for link in tree.links:
@@ -116,19 +112,16 @@ class FILE_OUTPUT_UL_LIST(bpy.types.UIList):
 				
 				if from_node.name in get_scene_compositor(context):
 					row.label(text=name, icon = "NODE_COMPOSITING")
+				elif link.from_socket.name == "Layer":
+					row.label(text=name, icon = "OUTLINER_DATA_GP_LAYER")
 				elif from_node.name.endswith(".Mix"):
 					row.label(text='Compositor', icon = "NODE_COMPOSITING")
 				else:
 					row.label(text=name, icon = "NODE")
 
-			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-				link = row.operator("scene.comp_link_layer_file_output", text="", icon='NODETREE', emboss=False)
-				link.name = output.name
-				link.index = index
-			else:
-				link = row.operator("scene.comp_link_file_output", text="", icon='NODETREE', emboss=False)
-				link.name = output.name
-				link.index = index
+			link = row.operator("scene.comp_link_layer_file_output", text="", icon='NODETREE', emboss=False)
+			link.name = output.name
+			link.index = index
 		return
 	
 class Add_OT_Output(bpy.types.Operator):
@@ -351,15 +344,10 @@ class Link_Layer_OT_FileOutput(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def link_item(self, context):
-		tree = get_scene_tree(context)
-		addon_prefs = get_addon_preference(context)
+
 		props = context.scene.compositor_layer_props
 
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			node_group = bpy.data.node_groups[props.compositor_panel]
-		else:
-			node_group = tree.nodes[props.compositor_panel].node_tree
-
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		list = []
 		list.append((' ', 'Compositor', '', 'NODE_COMPOSITING', 0))
@@ -394,20 +382,12 @@ class Link_Layer_OT_FileOutput(bpy.types.Operator):
 			link = tree.nodes.get(f"{self.link}.Mix")
 			links.new(link.outputs["Layer"], output.inputs[self.index])
 		else:
-			addon_prefs = get_addon_preference(context)
 			props = context.scene.compositor_layer_props
-			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-				node_group = bpy.data.node_groups[props.compositor_panel]
-			else:
-				node_group = tree.nodes[props.compositor_panel].node_tree
-
+			node_group = bpy.data.node_groups[props.compositor_panel]
 			compositor = node_group.compositor_props.layer[-1].name
 
 			link = tree.nodes.get(f"{compositor}.Mix")
-			if bpy.app.version >= (5, 0, 0):
-				links.new(link.outputs['Mix'], output.inputs[self.index])
-			else:
-				links.new(link.outputs['Result'], output.inputs[self.index])
+			links.new(link.outputs['Mix'], output.inputs[self.index])
 
 		return {'FINISHED'}
 
@@ -417,15 +397,9 @@ class Add_Slot_OT_FileOutput(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def link_item(self, context):
-		tree = get_scene_tree(context)
-		addon_prefs = get_addon_preference(context)
 		props = context.scene.compositor_layer_props
 
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			node_group = bpy.data.node_groups[props.compositor_panel]
-		else:
-			node_group = tree.nodes[props.compositor_panel].node_tree
-
+		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 		list = []
 		list.append((' ', 'Compositor', '', 'NODE_COMPOSITING', 0))
@@ -482,8 +456,7 @@ class COMPOSITOR_MT_add_output(bpy.types.Menu):
 def draw_format(layout, props):
 	layout.use_property_split = True
 	layout.use_property_decorate = False
-	if bpy.app.version >= (4, 4, 0):
-		layout.prop(props, "save_as_render")
+	layout.prop(props, "save_as_render")
 	col = layout.column()
 	col.prop(props.format, "file_format")
 	col.row().prop(props.format, "color_mode", text="Color", expand = True)
@@ -506,14 +479,10 @@ def draw_format(layout, props):
 		col.prop(props.format.view_settings, "white_balance_tint")
 
 def draw_output(self, context, box):
-	addon_prefs = get_addon_preference(context)
 	tree = get_scene_tree(context)
 	props = context.scene.compositor_layer_props
 
-	if bpy.app.version < (5, 0, 0):
-		box.operator("wm.call_menu", text="Add Output", icon='ADD').name = "COMPOSITOR_MT_add_output"
-	else:
-		box.operator("scene.comp_add_output", text="Add Output", icon='ADD').type = 'CompositorNodeOutputFile'
+	box.operator("scene.comp_add_output", text="Add Output", icon='ADD').type = 'CompositorNodeOutputFile'
 		
 	box.template_list("OUTPUT_UL_LIST", "", props, "output", props, "output_index")
 	if len(props.output) > 0:
@@ -525,125 +494,77 @@ def draw_output(self, context, box):
 		row.prop(item, 'name', text="")
 		row.operator("scene.comp_remove_output", text="", icon='X').index = props.output_index
 
-		if item.type == 'COMPOSITE':
-			from_node = None
-			for link in tree.links:
-				if link.to_node == node:
-					from_node = link.from_node
-					break
-			box.prop(item, 'composite', text="")
-			if from_node:
-				if from_node.name != item.composite or item.composite == "Default":
-					box.label(text=from_node.name, icon="NODE")
-				if item.composite != "Default" and from_node.name != item.composite:
-					box.label(text="Composite is not connecting compositor", icon="ERROR")
-			else:
-				box.label(text="Composite is not connected", icon="CANCEL")
-
-		elif item.type == 'OUTPUT_FILE':
-			if bpy.app.version < (5, 0, 0):
+		col = box.column()
+		col.prop(node, "directory", text="")
+		col.prop(node, "file_name", text="")
+		box.row().prop(node.format, "media_type", expand = True)
+		box.separator()
+		box.use_property_split = True
+		box.use_property_decorate = False
+		if node.format.media_type == "IMAGE":
+			col = box.column()
+			box.prop(node, "save_as_render")
+			col = box.column()
+			col.prop(node.format, "file_format")
+			col.row().prop(node.format, "color_mode", text="Color", expand = True)
+			col.row().prop(node.format, "color_depth", expand = True)
+			col.prop(node.format, "compression")
+			if node.save_as_render:
+				box.row().prop(node.format, "color_management", expand = True)
 				col = box.column()
-				col.label(text = "Base Path")
-				col.prop(node, "base_path", text="")
+				col.active = node.format.color_management == 'OVERRIDE'
+				col.prop(node.format.display_settings, "display_device")
+				col.prop(node.format.view_settings, "view_transform")
+				col.prop(node.format.view_settings, "look")
+				col.prop(node.format.view_settings, "exposure")
+				col.prop(node.format.view_settings, "gamma")
+				col.prop(node.format.view_settings, "use_curve_mapping")
+				if node.format.view_settings.use_curve_mapping:
+					col.template_curve_mapping(node.format.view_settings, "curve_mapping", type='COLOR', levels=True)
+				col.prop(node.format.view_settings, "use_white_balance")
+				if node.format.view_settings.use_white_balance:
+					col.prop(node.format.view_settings, "white_balance_temperature")
+					col.prop(node.format.view_settings, "white_balance_tint")
 
-				draw_format(box, node)
+		elif node.format.media_type == 'MULTI_LAYER_IMAGE':
+			col = box.column()
+			col.use_property_split = True
+			col.use_property_decorate = False
+			col.prop(node, "save_as_render")
+			col.row().prop(node.format, "color_depth", expand = True)
+			col.prop(node.format, "exr_codec")
+			col.prop(node.format, "use_exr_interleave")
+			col.row().prop(node.format, "color_management", text="Color Space", expand = True)
+			if node.format.color_management == 'OVERRIDE':
+				col.prop(node.format.linear_colorspace_settings, "name", text="Color Space")
+				
+		sub = box.row()
+		sub.template_list("FILE_OUTPUT_UL_LIST", "", node, "file_output_items", node, "active_item_index")
 
-				box.operator("scene.comp_add_file_output", text="Add Input", icon='ADD').name = node.name
-				sub = box.row()
-				sub.template_list("FILE_OUTPUT_UL_LIST", "", node, "file_slots", node, "active_input_index")
+		colsub = sub.column(align=True)
 
-				if len(node.file_slots) > 0:
+		xcolsub = colsub.split(align=True)
+		xcolsub.enabled = bool(len(get_scene_compositor(context)))
+		add = xcolsub.operator("scene.comp_add_slot_file_output", text="", icon='ADD')
+		add.name = node.name
 
-					slot = node.file_slots[node.active_input_index]
-					col = box.column()
-					col.label(text="File Subpath")
-					sub = col.row(align=True)
-					sub.prop(slot, 'path', text="")
-					remove = sub.operator("scene.comp_remove_file_output", text="", icon='X')
-					remove.name = node.name
-					remove.index = node.active_input_index
+		xcolsub = colsub.split(align=True)
+		xcolsub.enabled = bool(len(node.file_output_items) > 0)
+		
+		x = xcolsub.operator("scene.comp_remove_slot_file_output", text="", icon='X')
+		x.name = node.name
+		x.index = node.active_item_index
+		if len(node.file_output_items) > 0:
+			slot = node.file_output_items[node.active_item_index]
+			col = box.column()
+			col.prop(slot, "socket_type")
+			if slot.socket_type == "VECTOR":
+				col.prop(slot, "vector_socket_dimensions")
 
-					col = box.column()
-					col.use_property_split = False
-					col.prop(slot, "use_node_format")
-					if bpy.app.version < (4, 4, 0):
-						col.prop(slot, "save_as_render")
-					if not slot.use_node_format:
-						draw_format(box, slot)
-			else:
-				col = box.column()
-				col.prop(node, "directory", text="")
-				col.prop(node, "file_name", text="")
-				box.row().prop(node.format, "media_type", expand = True)
-				box.separator()
-				box.use_property_split = True
-				box.use_property_decorate = False
-				if node.format.media_type == "IMAGE":
-					col = box.column()
-					if bpy.app.version >= (4, 4, 0):
-						box.prop(node, "save_as_render")
-					col = box.column()
-					col.prop(node.format, "file_format")
-					col.row().prop(node.format, "color_mode", text="Color", expand = True)
-					col.row().prop(node.format, "color_depth", expand = True)
-					col.prop(node.format, "compression")
-					if node.save_as_render:
-						box.row().prop(node.format, "color_management", expand = True)
-						col = box.column()
-						col.active = node.format.color_management == 'OVERRIDE'
-						col.prop(node.format.display_settings, "display_device")
-						col.prop(node.format.view_settings, "view_transform")
-						col.prop(node.format.view_settings, "look")
-						col.prop(node.format.view_settings, "exposure")
-						col.prop(node.format.view_settings, "gamma")
-						col.prop(node.format.view_settings, "use_curve_mapping")
-						if node.format.view_settings.use_curve_mapping:
-							col.template_curve_mapping(node.format.view_settings, "curve_mapping", type='COLOR', levels=True)
-						col.prop(node.format.view_settings, "use_white_balance")
-						if node.format.view_settings.use_white_balance:
-							col.prop(node.format.view_settings, "white_balance_temperature")
-							col.prop(node.format.view_settings, "white_balance_tint")
-
-				elif node.format.media_type == 'MULTI_LAYER_IMAGE':
-					col = box.column()
-					col.use_property_split = True
-					col.use_property_decorate = False
-					col.prop(node, "save_as_render")
-					col.row().prop(node.format, "color_depth", expand = True)
-					col.prop(node.format, "exr_codec")
-					col.prop(node.format, "use_exr_interleave")
-					col.row().prop(node.format, "color_management", text="Color Space", expand = True)
-					if node.format.color_management == 'OVERRIDE':
-						col.prop(node.format.linear_colorspace_settings, "name", text="Color Space")
-
-				if addon_prefs.compositor_type == '5.0':
-					sub = box.row()
-					sub.template_list("FILE_OUTPUT_UL_LIST", "", node, "file_output_items", node, "active_item_index")
-
-					colsub = sub.column(align=True)
-
-					xcolsub = colsub.split(align=True)
-					xcolsub.enabled = bool(len(get_scene_compositor(context)))
-					add = xcolsub.operator("scene.comp_add_slot_file_output", text="", icon='ADD')
-					add.name = node.name
-
-					xcolsub = colsub.split(align=True)
-					xcolsub.enabled = bool(len(node.file_output_items) > 0)
-					
-					x = xcolsub.operator("scene.comp_remove_slot_file_output", text="", icon='X')
-					x.name = node.name
-					x.index = node.active_item_index
-					if len(node.file_output_items) > 0:
-						slot = node.file_output_items[node.active_item_index]
-						col = box.column()
-						col.prop(slot, "socket_type")
-						if slot.socket_type == "VECTOR":
-							col.prop(slot, "vector_socket_dimensions")
-
-						if node.format.media_type == "IMAGE":
-							col.prop(slot, "override_node_format")
-							if slot.override_node_format:
-								draw_format(box, slot)
+			if node.format.media_type == "IMAGE":
+				col.prop(slot, "override_node_format")
+				if slot.override_node_format:
+					draw_format(box, slot)
 					
 
 classes = (

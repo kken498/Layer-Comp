@@ -1,7 +1,6 @@
 import bpy
 import re
 from ..defs import *
-from .node import *
 from .effect import *
 from .matte import *
 from .mask import *
@@ -153,6 +152,56 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 				icon = f'SEQUENCE_COLOR_0{i+1}'
 			list.append((icon, "", '', icon, index))
 		return list
+	
+	def update_colorspace_items(self, context):
+		items = []
+		try:
+			node_type = bpy.types.CompositorNodeConvertColorSpace
+			prop = node_type.bl_rna.properties.get("to_color_space") or node_type.bl_rna.properties.get("from_color_space")
+			if prop:
+				for i, enum_item in enumerate(prop.enum_items):
+					items.append((enum_item.identifier, enum_item.name, enum_item.description, enum_item.icon, i))
+		except Exception:
+			pass
+		return items
+
+	colorspace_items = [('ACES 1.3 sRGB', 'ACES 1.3 sRGB', 'ACES 1.0 Output Transform for SDR D65 video, limited to Rec.709 gamut', 'NONE', 0), ('ACES 2.0 sRGB', 'ACES 2.0 sRGB', 'ACES 2 Output Transform for 100 nit SDR Rec709', 'NONE', 1), ('ACES2065-1', 'ACES2065-1', 'Linear AP0 with ACES white point', 'NONE', 2), ('ACEScc', 'ACEScc', 'ACES color correction space, using AP1 primaries.', 'NONE', 3), ('ACEScct', 'ACEScct', 'ACES color correction space with toe, using AP1 primaries.', 'NONE', 4), ('ACEScg', 'ACEScg', 'Linear AP1 with ACES white point', 'NONE', 5), ('AgX Base sRGB', 'AgX Base sRGB', 'AgX Base Image Encoding for sRGB Display', 'NONE', 6), ('AgX Log', 'AgX Log', 'Log Encoding with Chroma inset and rotation of primaries, and with 25 Stops of Dynamic Range', 'NONE', 7), ('Display P3', 'Display P3', "Apple's Display P3 with sRGB compound (piece-wise) encoding transfer function, common on Mac devices", 'NONE', 8), ('Filmic Log', 'Filmic Log', 'Log based filmic shaper with 16.5 stops of latitude, and 25 stops of dynamic range', 'NONE', 9), ('Filmic sRGB', 'Filmic sRGB', 'sRGB display space with Filmic view transform', 'NONE', 10), ('Khronos PBR Neutral sRGB', 'Khronos PBR Neutral sRGB', 'Khronos PBR Neutral Image Encoding for sRGB Display', 'NONE', 11), ('Linear CIE-XYZ D65', 'Linear CIE-XYZ D65', '1931 CIE XYZ with adapted illuminant D65 white point', 'NONE', 12), ('Linear CIE-XYZ E', 'Linear CIE-XYZ E', '1931 CIE XYZ standard with assumed illuminant E white point', 'NONE', 13), ('Linear DCI-P3 D65', 'Linear DCI-P3 D65', 'Linear DCI-P3 with illuminant D65 white point', 'NONE', 14), ('Linear FilmLight E-Gamut', 'Linear FilmLight E-Gamut', 'Linear E-Gamut with illuminant D65 white point', 'NONE', 15), ('Linear Rec.2020', 'Linear Rec.2020', 'Linear BT.2020 with illuminant D65 white point', 'NONE', 16), ('Linear Rec.709', 'Linear Rec.709', 'Linear BT.709 with illuminant D65 white point', 'NONE', 17), ('Non-Color', 'Non-Color', 'Generic data that is not color, will not apply any color transform (e.g. normal maps)', 'NONE', 18), ('Rec.1886', 'Rec.1886', 'BT.1886 2.4 Exponent EOTF Display, commonly used for TVs', 'NONE', 19), ('Rec.2020', 'Rec.2020', 'BT.2020 2.4 Exponent EOTF Display', 'NONE', 20), ('Rec.2100-HLG', 'Rec.2100-HLG', 'Rec.2100-HLG 1000 nits peak display with reference white at 100 nits', 'NONE', 21), ('Rec.2100-PQ', 'Rec.2100-PQ', 'Rec.2100-PQ 10000 nits peak display with reference white at 100 nits', 'NONE', 22), ('sRGB', 'sRGB', 'sRGB IEC 61966-2-1 compound (piece-wise) encoding', 'NONE', 23), ('scene_linear', 'Working Space', 'Working color space of the current file', 'NONE', 24)]
+
+	def update_colorspace(self, context):
+		props = context.scene.compositor_layer_props
+		node_group = bpy.data.node_groups[props.compositor_panel]
+		compositor = node_group.compositor_props
+		layer = compositor.layer[compositor.layer_index]
+		
+		color_in_node = node_group.nodes.get(f"{layer.name}.color_in")
+		color_out_node = node_group.nodes.get(f"{layer.name}.color_out")
+
+		if color_in_node:
+			color_in_node.to_color_space = self.colorspace
+		if color_out_node:
+			color_out_node.from_color_space = self.colorspace
+
+	def update_in_colorspace(self, context):
+		props = context.scene.compositor_layer_props
+		node_group = bpy.data.node_groups[props.compositor_panel]
+		compositor = node_group.compositor_props
+		layer = compositor.layer[compositor.layer_index]
+		
+		color_in_node = node_group.nodes.get(f"{layer.name}.color_in")
+
+		if color_in_node:
+			color_in_node.from_color_space = self.in_colorspace
+
+	def update_out_colorspace(self, context):
+		props = context.scene.compositor_layer_props
+		node_group = bpy.data.node_groups[props.compositor_panel]
+		compositor = node_group.compositor_props
+		layer = compositor.layer[compositor.layer_index]
+		
+		color_out_node = node_group.nodes.get(f"{layer.name}.color_out")
+
+		if color_out_node:
+			color_out_node.to_color_space = self.out_colorspace
 
 	name : bpy.props.StringProperty(name='Layer Name', update=update_name, get=get_name, set=set_name)
 	sub_name : bpy.props.StringProperty()
@@ -173,6 +222,27 @@ class Layer_Props(Matte_Props, bpy.types.PropertyGroup):
 							update = update_layer_channel
 									)
 	
+	colorspace : bpy.props.EnumProperty(
+							name='Color Space',
+							default='scene_linear',
+							items=colorspace_items,
+							update = update_colorspace,
+									)
+	
+	in_colorspace : bpy.props.EnumProperty(
+							name='In Color Space',
+							default='scene_linear',
+							items=colorspace_items,
+							update = update_in_colorspace,
+									)
+	
+	out_colorspace : bpy.props.EnumProperty(
+							name='Out Color Space',
+							default='scene_linear',
+							items=colorspace_items,
+							update = update_out_colorspace,
+									)
+
 	label : bpy.props.EnumProperty(
 					name='Layer Label', 
 					items = label_item,
@@ -211,37 +281,13 @@ class LAYER_UL_LIST(bpy.types.UIList):
 	def draw_item(self, context, layout, data, item, propname, icon, active_data, active_propname, index):
 
 		if self.layout_type in {'DEFAULT'}:
-			tree = get_scene_tree(context)
 			props = context.scene.compositor_layer_props
 			node_group = bpy.data.node_groups[props.compositor_panel]
 			compositor = node_group.compositor_props
 			addon_prefs = get_addon_preference(context)
 
 			mix_node = node_group.nodes.get(f"{item.name}.Mix")
-			sub_mix_node = node_group.nodes.get(f"{item.name}.Mix_Sub")
 
-			active = True
-
-			if item.type == "Source":
-				group_node = tree.nodes[compositor.name]
-				if item.socket:
-					input = f'{item.source}({item.socket})'
-				else:
-					input = item.source
-				connected = False
-				for link in tree.links:
-					if link.to_socket == group_node.inputs[input]:
-						connected = True
-						break
-			else:
-				connected = True
-
-			if item.type == "Source":
-				if not tree.nodes.get(item.source):
-					active = False
-				else:
-					active = (not tree.nodes[item.source].mute) and connected	
-			layout.active = active
 			row = layout.row(align=True)
 			row.prop(item, "hide", text = "", icon = "HIDE_ON" if item.hide == True else "HIDE_OFF", emboss = False)
 			if item.hide:
@@ -263,14 +309,7 @@ class LAYER_UL_LIST(bpy.types.UIList):
 
 			sub = xrow.row(align=True)
 			subrow = sub.row()
-			subrow.alert = not active
-			if active:
-				if bpy.app.version >= (4, 4, 0):
-					subrow.prop(item, "label", text = "", emboss = False)
-				else:
-					subrow.label(text = "", icon=item.icon)
-			else:
-				subrow.label(text = "", icon="NOT_FOUND")
+			subrow.prop(item, "label", text = "", emboss = False)
 
 			if addon_prefs.layer_name == "Layer":
 				subrow.prop(item, "name", text = "", emboss = False)
@@ -279,8 +318,6 @@ class LAYER_UL_LIST(bpy.types.UIList):
 
 			sub = xrow.row(align=True)
 			if addon_prefs.label:
-				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-					sub.label(text = "", icon = "CURRENT_FILE" if item.type not in ["Source", "Adjustment"] else "BLANK1")
 				if item.matte != "None":
 					sub.label(text = "", icon = "IMAGE_ZDEPTH")
 				elif item.is_matte:
@@ -295,17 +332,10 @@ class LAYER_UL_LIST(bpy.types.UIList):
 					sub.label(text = "", icon = "BLANK1")
 
 			sub = xrow.row(align=True)
-			if bpy.app.version >= (5, 0, 0):
-				if addon_prefs.blend_mode:
-					sub.prop(mix_node.inputs[0], 'default_value', text="")
-				if addon_prefs.mix:
-					sub.prop(mix_node.inputs[1], 'default_value', text="Opacity")
-
-			if bpy.app.version < (5, 0, 0):
-				if addon_prefs.blend_mode:
-					sub.prop(mix_node, 'blend_type', text="")
-				if addon_prefs.mix:
-					sub.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
+			if addon_prefs.blend_mode:
+				sub.prop(mix_node.inputs[0], 'default_value', text="")
+			if addon_prefs.mix:
+				sub.prop(mix_node.inputs[1], 'default_value', text="Opacity")
 
 			row.operator("scene.comp_drag_layer", text="", icon='LAYER_ACTIVE' if item.drag else 'COLLAPSEMENU', emboss = False).index = item.index
 
@@ -351,7 +381,6 @@ class Add_OT_Layer(bpy.types.Operator):
 
 	def execute(self, context):
 		# Define props
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
@@ -375,213 +404,91 @@ class Add_OT_Layer(bpy.types.Operator):
 		frame.name = f"{source_name}.Frame"
 		frame.label = source_name
 
-		if bpy.app.version >= (5, 0, 0):
-			mix_node = append_node('Presets', ".*Mix Layer", 'v5_0', node_group.nodes)
-			mix_node.name = f"{source_name}.Mix"
-			mix_node.parent = frame
+		mix_node = append_node('Presets', ".*Mix Layer", 'v5_0', node_group.nodes)
+		mix_node.name = f"{source_name}.Mix"
+		mix_node.parent = frame
 
-			if self.type == "Source":
-				group_node = tree.nodes[compositor.name]
-				
+		# Create color space conversion nodes
+		color_in_node = node_group.nodes.new("CompositorNodeConvertColorSpace")
+		color_in_node.name = f"{source_name}.color_in"
+		color_in_node.parent = frame
+		color_in_node.location = (mix_node.location[0] - 500, mix_node.location[1] - 150)
+
+		color_out_node = node_group.nodes.new("CompositorNodeConvertColorSpace")
+		color_out_node.name = f"{source_name}.color_out"
+		color_out_node.parent = frame
+		color_out_node.location = (mix_node.location[0] - 200, mix_node.location[1] - 150)
+
+		# Connect color_out to mix
+		node_group.links.new(color_out_node.outputs[0], mix_node.inputs[3])
+
+		# Initially connect color_in to color_out
+		node_group.links.new(color_in_node.outputs[0], color_out_node.inputs[0])
+
+		if self.type == "Adjustment":
+			if len(compositor.layer) == 0:
 				GroupInput = node_group.nodes.new("NodeGroupInput")
 				GroupInput.name = f"{source_name}.GroupInput"
 				GroupInput.parent = frame
 
-				source_node = tree.nodes[self.name]
-				if self.socket:
-					output = source_node.outputs[self.socket]
-				else:
-					output = get_outputs(source_node, None)
-
-				# Check is source sokect used. If not, create new socket
-				if self.socket:
-					input_name = f'{self.name}({self.socket})'
-				else:
-					input_name = self.name
-				if not group_node.inputs.get(input_name):
-					input = node_group.interface.new_socket(name=input_name, in_out='INPUT', socket_type=output.bl_idname)
-					input.hide_value = True
-
-				# Connect source output to the source input of the group node
-				tree.links.new(output, group_node.inputs[input_name])
-
-				# Connect GroupInput to Transform node
-				node_group.links.new(mix_node.inputs[3], GroupInput.outputs[input_name])
-
-				input_node = None
-
-			elif self.type == "Adjustment":
-				if len(compositor.layer) == 0:
-					GroupInput = node_group.nodes.new("NodeGroupInput")
-					GroupInput.name = f"{source_name}.GroupInput"
-					GroupInput.parent = frame
-
-					# Connect GroupInput to Transform node
-					node_group.links.new(mix_node.inputs[3], GroupInput.outputs[0])
-				else:
-					last_layer = compositor.layer[-1]
-					last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
-					node_group.links.new(mix_node.inputs[3], last_mix.outputs[0])
-				
-				input_node = None
-
-			elif self.type == "Compositor":
-				input_node = node_group.nodes.new("CompositorNodeGroup")
-				input_node.node_tree = bpy.data.node_groups[self.name]
-				input_node.name = source_name
-				input_node.parent = frame
-				
-				# Connect GroupInput to Transform node
-				output = get_outputs(input_node, None)
-				node_group.links.new(mix_node.inputs[3], output)
-
+				# Connect GroupInput to color_in
+				node_group.links.new(color_in_node.inputs[0], GroupInput.outputs[0])
 			else:
-				input_node = node_group.nodes.new(self.type)
-				input_node.name = source_name
-				input_node.parent = frame
-				
-				# Connect GroupInput to Transform node
-				output = get_outputs(input_node, None)
-				node_group.links.new(mix_node.inputs[3], output)
+				last_layer = compositor.layer[-1]
+				last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
+				node_group.links.new(color_in_node.inputs[0], last_mix.outputs[0])
+			
+			input_node = None
 
-			# Set alpha to mix node 1 if the layer is single layer
-			if len(compositor.layer) == 0:
-				node_group.links.new(mix_node.inputs[2], GroupInput.outputs[0])
-			else:
-				# Connect mix node from last layer 
-				last_layer = compositor.layer[len(compositor.layer)-1]
-				last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
+		elif self.type == "Compositor":
+			input_node = node_group.nodes.new("CompositorNodeGroup")
+			input_node.node_tree = bpy.data.node_groups[self.name]
+			input_node.name = source_name
+			input_node.parent = frame
+			
+			# Connect to color_in
+			output = get_outputs(input_node, None)
+			node_group.links.new(color_in_node.inputs[0], output)
 
-				node_group.links.new(mix_node.inputs[2], last_mix_node.outputs[0])
+		else:
+			input_node = node_group.nodes.new(self.type)
+			input_node.name = source_name
+			input_node.parent = frame
+			
+			# Connect to color_in
+			output = get_outputs(input_node, None)
+			node_group.links.new(color_in_node.inputs[0], output)
 
-			if input_node:
-				input_node.location = (mix_node.location[0] - 250, mix_node.location[1] - 100)
-			else:
-				GroupInput.location = (mix_node.location[0] - 250, mix_node.location[1] - 100)
+		# Set alpha to mix node 1 if the layer is single layer
+		if len(compositor.layer) == 0:
+			node_group.links.new(mix_node.inputs[2], GroupInput.outputs[0])
+		else:
+			# Connect mix node from last layer 
+			last_layer = compositor.layer[len(compositor.layer)-1]
+			last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
 
-			node_group.links.new(GroupOutput.inputs[0], mix_node.outputs[0])
+			node_group.links.new(mix_node.inputs[2], last_mix_node.outputs[0])
 
-		if bpy.app.version < (5, 0, 0):
+		if input_node:
+			input_node.location = (color_in_node.location[0] - 250, color_in_node.location[1] - 100)
+			GroupInput.location = (input_node.location[0], input_node.location[1] + 250)
+		else:
+			GroupInput.location = (color_in_node.location[0] - 500, color_in_node.location[1] + 250)
 
-			# Create Mix node
-			mix_node = create_mix_node(node_group)
-			mix_node.name = f"{source_name}.Mix"
-			mix_node.parent = frame
+		node_group.links.new(GroupOutput.inputs[0], mix_node.outputs[0])
 
-			# Create Sub Mix node
-			sub_mix_node = create_mix_node(node_group)
-			sub_mix_node.name = f"{source_name}.Mix_Sub"
-			sub_mix_node.inputs[0].default_value = 1
-			if bpy.app.version >= (4, 5, 0):
-				sub_mix_node.data_type = 'FLOAT'
-				sub_mix_node.inputs[3].default_value = 1
-			elif bpy.app.version < (4, 5, 0):
-				sub_mix_node.inputs[1].default_value = (0,0,0,0)
-				sub_mix_node.inputs[2].default_value = (1,1,1,1)
-			sub_mix_node.parent = frame
-
-			# Create Transform node
+		# Create or update viewer node
+		viewer_node = node_group.nodes.get("Viewer")
+		if not viewer_node:
+			viewer_node = node_group.nodes.new("CompositorNodeViewer")
+			viewer_node.name = "Viewer"
 		
-			__transform = bpy.data.node_groups.get(".*Transform")
-
-			if not __transform:
-				__transform = create_transform_node_group()
-
-			transform_node = node_group.nodes.new("CompositorNodeGroup")
-			transform_node.node_tree = __transform
-
-				
-			transform_node.name = f"{source_name}.Transform"
-			transform_node.parent = frame
-
-			# Connect GroupInput to Transform node
-			node_group.links.new(get_mix_node_inputs(mix_node, 2), transform_node.outputs[0])
-
-			# Connect Mix node
-			node_group.links.new(mix_node.inputs[0], get_mix_node_outputs(sub_mix_node))
-
-			if self.type == "Source":
-				group_node = tree.nodes[compositor.name]
-				
-				GroupInput = node_group.nodes.new("NodeGroupInput")
-				GroupInput.name = f"{source_name}.GroupInput"
-				GroupInput.parent = frame
-
-				source_node = tree.nodes[self.name]
-				if self.socket:
-					output = source_node.outputs[self.socket]
-				else:
-					output = get_outputs(source_node, None)
-
-				# Check is source sokect used. If not, create new socket
-				if self.socket:
-					input_name = f'{self.name}({self.socket})'
-				else:
-					input_name = self.name
-				if not group_node.inputs.get(input_name):
-					input = node_group.interface.new_socket(name=input_name, in_out='INPUT', socket_type=output.bl_idname)
-					input.hide_value = True
-
-				# Connect source output to the source input of the group node
-				tree.links.new(output, group_node.inputs[input_name])
-
-				# Connect GroupInput to Transform node
-				node_group.links.new(transform_node.inputs[0], GroupInput.outputs[input_name])
-
-				input_node = None
-
-			elif self.type == "Adjustment":
-				if len(compositor.layer) == 0:
-					GroupInput = node_group.nodes.new("NodeGroupInput")
-					GroupInput.name = f"{source_name}.GroupInput"
-					GroupInput.parent = frame
-
-					# Connect GroupInput to Transform node
-					node_group.links.new(transform_node.inputs[0], GroupInput.outputs[0])
-				else:
-					last_layer = compositor.layer[-1]
-					last_mix = node_group.nodes.get(f"{last_layer.name}.Mix")
-					node_group.links.new(transform_node.inputs[0], last_mix.outputs[0])
-				
-				input_node = None
-
-			elif self.type == "Compositor":
-				input_node = node_group.nodes.new("CompositorNodeGroup")
-				input_node.node_tree = bpy.data.node_groups[self.name]
-				input_node.name = source_name
-				input_node.parent = frame
-				
-				# Connect GroupInput to Transform node
-				output = get_outputs(input_node, None)
-				node_group.links.new(transform_node.inputs[0], output)
-
-			else:
-				input_node = node_group.nodes.new(self.type)
-				input_node.name = source_name
-				input_node.parent = frame
-				
-				# Connect GroupInput to Transform node
-				output = get_outputs(input_node, None)
-				node_group.links.new(transform_node.inputs[0], output)
-
-			# Set alpha to mix node 1 if the layer is single layer
-			if len(compositor.layer) == 0:
-				node_group.links.new(get_mix_node_inputs(mix_node, 1), GroupInput.outputs[0])
-			else:
-				# Connect mix node from last layer 
-				last_layer = compositor.layer[len(compositor.layer)-1]
-				last_mix_node = node_group.nodes.get(f"{last_layer.name}.Mix")
-
-				node_group.links.new(get_mix_node_inputs(mix_node, 1), get_mix_node_outputs(last_mix_node))
-
-			sub_mix_node.location = (mix_node.location[0] - 150, mix_node.location[1] + 100)
-			transform_node.location = (mix_node.location[0] - 150, mix_node.location[1] - 100)
-			if input_node:
-				input_node.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
-			else:
-				GroupInput.location = (transform_node.location[0] - 150, transform_node.location[1] - 100)
-
-			node_group.links.new(GroupOutput.inputs[0], get_mix_node_outputs(mix_node))
+		# Connect viewer to current mix node output
+		for link in node_group.links:
+			if link.from_socket.node == viewer_node:
+				node_group.links.remove(link)
+				break
+		node_group.links.new(mix_node.outputs[0], viewer_node.inputs[0])
 
 		# Add layer properties
 		item = compositor.layer.add()
@@ -598,92 +505,6 @@ class Add_OT_Layer(bpy.types.Operator):
 		compositor.layer_index = len(compositor.layer) - 1
 
 		bpy.ops.scene.comp_align_node_tree(name=node_group.name)
-
-		return {"FINISHED"}
-
-class Add_OT_Layer_Socket(bpy.types.Operator):
-	bl_idname = "scene.comp_add_layer_socket"
-	bl_label = "Add Compositor Layer Socket"
-	bl_description = "Add Compositor Layer Socket"
-	bl_options = {'REGISTER', 'UNDO'}
-
-	name : bpy.props.StringProperty(options={'HIDDEN'})
-	icon : bpy.props.StringProperty(options={'HIDDEN'})
-
-	def invoke(self, context, event):
-		tree = get_scene_tree(context)
-		source_node = tree.nodes[self.name]
-		if len(source_node.outputs) > 1:
-			wm = context.window_manager
-			return wm.invoke_props_popup(self, event)
-		else:
-			return self.execute(context)
-
-	def draw(self, context):
-		tree = get_scene_tree(context)
-		source_node = tree.nodes[self.name]
-
-		add = self.layout.operator("scene.comp_add_layer", text=self.name, emboss=False, icon=self.icon)
-		add.name = self.name
-		add.icon = self.icon
-		add.type = "Source"
-
-		self.layout.separator()
-		add = self.layout.operator("scene.comp_add_layer_all_socket", text="(All)", emboss=False)
-		add.name = self.name
-		add.icon = self.icon
-		self.layout.separator()
-
-		col = self.layout.column()
-		for item in source_node.outputs:
-			if item.enabled:
-				if bpy.app.version >= (4, 5, 0):
-					add = col.operator("scene.comp_add_layer", text=item.name, emboss=False, icon = socket_data[item.type])
-				elif bpy.app.version < (4, 5, 0):
-					add = col.operator("scene.comp_add_layer", text=item.name, emboss=False)
-				add.name = self.name
-				add.socket = item.name
-				add.icon = self.icon
-				add.type = "Source"
-
-	def execute(self, context):
-		bpy.ops.scene.comp_add_layer(name = self.name, icon = self.icon, type = "Source")
-		return {"FINISHED"}
-
-class Add_OT_Layer_All_Socket(bpy.types.Operator):
-	bl_idname = "scene.comp_add_layer_all_socket"
-	bl_label = "Add Compositor Layer All Socket"
-	bl_description = "Add Compositor Layer All Socket"
-	bl_options = {'REGISTER', 'UNDO'}
-
-	name : bpy.props.StringProperty(options={'HIDDEN'})
-	icon : bpy.props.StringProperty(options={'HIDDEN'})
-
-	def execute(self, context):
-		tree = get_scene_tree(context)
-		source_node = tree.nodes[self.name]
-		for item in source_node.outputs:
-			if item.enabled:
-				bpy.ops.scene.comp_add_layer(name=self.name, socket = item.name, icon = self.icon, type = "Source")
-
-		return {"FINISHED"}
-
-class Add_OT_Layer_From_Node(bpy.types.Operator):
-	bl_idname = "scene.comp_add_layer_from_node"
-	bl_label = "Add Compositor Layer From Node"
-	bl_description = "Add Compositor Layer from selected node"
-	bl_options = {'REGISTER', 'UNDO'}
-
-	def execute(self, context):
-		tree = get_scene_tree(context)
-		selected_node = [node for node in tree.nodes if node.select and node.outputs]
-
-		for node in selected_node:
-			if node.type == "GROUP" and node.node_tree.compositor_props.name:
-				continue
-			for item in node.outputs:
-				if item.enabled:
-					bpy.ops.scene.comp_add_layer(name=node.name, socket = item.name, icon = "NODE", type = "Source")
 
 		return {"FINISHED"}
 
@@ -801,16 +622,6 @@ class Remove_OT_Layer(bpy.types.Operator):
 
 		if node_group.nodes.get(f"{layer.name}.Frame"):
 			node_group.nodes.remove(node_group.nodes.get(f"{layer.name}.Frame"))
-		
-		# Check is source socket connected. If not, remove the socket
-		if layer.type == "Source":
-			if layer.socket:
-				name = f'{layer.source}({layer.socket})'
-			else:
-				name = layer.source
-			is_connected = any(link.from_socket.name == name for link in node_group.links)
-			if not is_connected:
-				node_group.interface.remove(item=node_group.interface.items_tree[name])
 
 		layer.effect.clear()
 
@@ -826,6 +637,18 @@ class Remove_OT_Layer(bpy.types.Operator):
 			GroupInput = node_group.nodes.get("Group Input")
 			GroupOutput = node_group.nodes.get("Group Output")
 			node_group.links.new(GroupInput.outputs[0], GroupOutput.inputs[0])
+		else:
+			# Update viewer to show new top layer
+			viewer_node = node_group.nodes.get("Viewer")
+			if viewer_node:
+				for link in node_group.links:
+					if link.from_socket.node == viewer_node:
+						node_group.links.remove(link)
+						break
+				new_top_layer = compositor.layer[-1]
+				new_top_mix = node_group.nodes.get(f"{new_top_layer.name}.Mix")
+				if new_top_mix:
+					node_group.links.new(new_top_mix.outputs[0], viewer_node.inputs[0])
 
 		bpy.ops.scene.comp_align_node_tree(name=node_group.name)
 
@@ -881,6 +704,8 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 
 		new_layer = compositor.layer[len(compositor.layer)-1]
 
+		new_layer.colorspace = layer.colorspace
+
 		if layer_matte[0] != "None":
 			new_layer.matte = layer_matte[0]
 			new_layer.matte_type = layer_matte[1]
@@ -889,8 +714,11 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 		mix_node = node_group.nodes.get(f"{layer.name}.Mix")
 		new_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix")
 
-		sub_mix_node = node_group.nodes.get(f"{layer.name}.Mix_Sub")
-		new_sub_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix_Sub")
+		color_in_node = node_group.nodes.get(f"{layer.name}.color_in")
+		new_color_in_node = node_group.nodes.get(f"{new_layer.name}.color_in")
+
+		color_out_node = node_group.nodes.get(f"{layer.name}.color_out")
+		new_color_out_node = node_group.nodes.get(f"{new_layer.name}.color_out")
 
 		transform_node = node_group.nodes.get(f"{layer.name}.Transform")
 		new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
@@ -899,8 +727,8 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 		new_source_node = node_group.nodes.get(new_layer.name)
 
 		convert_node_data(mix_node, new_mix_node)
-		if sub_mix_node:
-			convert_node_data(sub_mix_node, new_sub_mix_node)
+		convert_node_data(color_in_node, new_color_in_node)
+		convert_node_data(color_out_node, new_color_out_node)
 		if transform_node:
 			convert_node_data(transform_node, new_transform_node)
 		if source_node and new_source_node:
@@ -938,26 +766,16 @@ class Copy_OT_Layer(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def compositor_item(self, context):
-		addon_prefs = get_addon_preference(context)
-		tree = get_scene_tree(context)
 		list = []
 		for i, name in enumerate(get_scene_compositor(context)):
-			if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-				node_group = bpy.data.node_groups[name]
-			else:
-				node_group = tree.nodes[name].node_tree
+			node_group = bpy.data.node_groups[name]
 			compositor = node_group.compositor_props
 			if compositor.layer:
 				list.append((name, name, ''))
 		return list
 	
 	def layer_item(self, context):
-		tree = get_scene_tree(context)
-		addon_prefs = get_addon_preference(context)
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			node_group = bpy.data.node_groups[self.compositor]
-		else:
-			node_group = tree.nodes[self.compositor].node_tree
+		node_group = bpy.data.node_groups[self.compositor]
 		compositor = node_group.compositor_props
 		list = []
 		if bpy.app.version >= (4, 4, 0):
@@ -986,15 +804,10 @@ class Copy_OT_Layer(bpy.types.Operator):
 		if not (self.compositor and self.layer):
 			self.report({"INFO"}, "No layer item")
 			return {"FINISHED"}
-		
-		tree = get_scene_tree(context)
-		props = context.scene.compositor_layer_props
-		addon_prefs = get_addon_preference(context)
 
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			copy_node_group = bpy.data.node_groups[self.compositor]
-		else:
-			copy_node_group = tree.nodes[self.compositor].node_tree
+		props = context.scene.compositor_layer_props
+
+		copy_node_group = bpy.data.node_groups[self.compositor]
 
 		copy_compositor = copy_node_group.compositor_props
 		
@@ -1012,6 +825,8 @@ class Copy_OT_Layer(bpy.types.Operator):
 
 			new_layer.name = copy_layer.name
 
+			new_layer.colorspace = copy_layer.colorspace
+
 			if copy_layer_matte[0] != "None":
 				if any(copy_layer_matte[0] == layer.name for layer in compositor.layer):
 					new_layer.matte = copy_layer_matte[0]
@@ -1021,8 +836,11 @@ class Copy_OT_Layer(bpy.types.Operator):
 			mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix")
 			new_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix")
 
-			sub_mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix_Sub")
-			new_sub_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix_Sub")
+			color_in_node = copy_node_group.nodes.get(f"{copy_layer.name}.color_in")
+			new_color_in_node = node_group.nodes.get(f"{new_layer.name}.color_in")
+
+			color_out_node = copy_node_group.nodes.get(f"{copy_layer.name}.color_out")
+			new_color_out_node = node_group.nodes.get(f"{new_layer.name}.color_out")
 
 			transform_node = copy_node_group.nodes.get(f"{copy_layer.name}.Transform")
 			new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
@@ -1031,8 +849,10 @@ class Copy_OT_Layer(bpy.types.Operator):
 			new_source_node = node_group.nodes.get(new_layer.name)
 
 			convert_node_data(mix_node, new_mix_node)
-			convert_node_data(sub_mix_node, new_sub_mix_node)
-			convert_node_data(transform_node, new_transform_node)
+			convert_node_data(color_in_node, new_color_in_node)
+			convert_node_data(color_out_node, new_color_out_node)
+			if transform_node:
+				convert_node_data(transform_node, new_transform_node)
 			if source_node and new_source_node:
 				convert_node_data(source_node, new_source_node)
 
@@ -1059,10 +879,6 @@ class Copy_OT_Layer(bpy.types.Operator):
 
 				mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix")
 				new_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix")
-
-				sub_mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix_Sub")
-				new_sub_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix_Sub")
-
 				transform_node = copy_node_group.nodes.get(f"{copy_layer.name}.Transform")
 				new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
 
@@ -1070,7 +886,6 @@ class Copy_OT_Layer(bpy.types.Operator):
 				new_source_node = node_group.nodes.get(new_layer.name)
 
 				convert_node_data(mix_node, new_mix_node)
-				convert_node_data(sub_mix_node, new_sub_mix_node)
 				convert_node_data(transform_node, new_transform_node)
 				if source_node and new_source_node:
 					convert_node_data(source_node, new_source_node)
@@ -1173,13 +988,13 @@ class Move_OT_Layer(bpy.types.Operator):
 					node_group.links.new(input, GroupInput.outputs[0])
 
 			if layer.type == "Adjustment":
-				if layer.effect:
+				color_in_node = node_group.nodes.get(f"{layer.name}.color_in")
+				if color_in_node:
+					input = get_inputs(color_in_node)
+				elif layer.effect:
 					input = get_inputs(node_group.nodes[f'{layer.name}.Effect.{layer.effect[0].name}'])
 				else:
-					if bpy.app.version >= (5, 0, 0):
-						input = node_group.nodes[f"{layer.name}.Mix"].inputs[3]
-					else:
-						input = node_group.nodes[f"{layer.name}.Transform"].inputs[0]
+					input = node_group.nodes[f"{layer.name}.Mix"].inputs[3]
 
 				node_group.links.new(get_mix_node_outputs(next_mix_node), input)
 
@@ -1246,7 +1061,10 @@ class Move_OT_Layer(bpy.types.Operator):
 					node_group.links.new(input, GroupInput.outputs[0])
 
 			if last_layer.type == "Adjustment":
-				if last_layer.effect:
+				color_in_node = node_group.nodes.get(f"{last_layer.name}.color_in")
+				if color_in_node:
+					input = get_inputs(color_in_node)
+				elif last_layer.effect:
 					input = get_inputs(node_group.nodes[f'{last_layer.name}.Effect.{last_layer.effect[0].name}'])
 				else:
 					if bpy.app.version >= (5, 0, 0):
@@ -1265,6 +1083,18 @@ class Move_OT_Layer(bpy.types.Operator):
 			compositor.layer_index = self.index - 1
 
 		bpy.ops.scene.comp_align_node_tree(name=node_group.name)
+		
+		# Update viewer to always show top layer
+		viewer_node = node_group.nodes.get("Viewer")
+		if viewer_node and len(compositor.layer) > 0:
+			for link in node_group.links:
+				if link.from_socket.node == viewer_node:
+					node_group.links.remove(link)
+					break
+			top_layer = compositor.layer[-1]
+			top_mix = node_group.nodes.get(f"{top_layer.name}.Mix")
+			if top_mix:
+				node_group.links.new(top_mix.outputs[0], viewer_node.inputs[0])
 		
 		return {"FINISHED"}
 
@@ -1337,12 +1167,30 @@ class Drag_OT_Layer(bpy.types.Operator):
 		context.window_manager.modal_handler_add(self)
 		return {'RUNNING_MODAL'}
 
+class Edit_OT_Comp_Layer(bpy.types.Operator):
+	bl_idname = "scene.comp_edit_comp_layer"
+	bl_label = "Edit Compositor Layer"
+	bl_description = "Edit Compositor Layer"
+	bl_options = {'REGISTER', 'UNDO'}
+
+	name : bpy.props.StringProperty(options={'HIDDEN'})
+
+	def execute(self, context):
+		# Define props
+		props = context.scene.compositor_layer_props
+		for name in get_scene_compositor(context):
+			if name == self.name:
+				props.panel = 'Compositor'
+				props.compositor_panel = name
+				break
+
+		return {"FINISHED"}
+
 class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 	bl_label = "Layer"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		addon_prefs = get_addon_preference(context)
 		layout = self.layout
 		if layout.operator_context == 'EXEC_REGION_WIN':
 			layout.operator_context = 'INVOKE_REGION_WIN'
@@ -1351,23 +1199,15 @@ class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 			layout.separator()
 
 		layout.operator_context = 'EXEC_REGION_WIN'
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			layout.menu("COMPOSITOR_MT_add_source_layer", icon = "CURRENT_FILE")
-		else:
-			layout.menu("COMPOSITOR_MT_add_comp_layer", icon = "NODE_COMPOSITING")
+		layout.menu("COMPOSITOR_MT_add_comp_layer", icon = "NODE_COMPOSITING")
 		layout.separator()
-		if bpy.app.version >= (4, 4, 0):
-			adj_icon = 'STRIP_COLOR_01'
-		else:
-			adj_icon = 'SEQUENCE_COLOR_01'
-
-		add = layout.operator("scene.comp_add_layer", text="Adjustment Layer", icon=adj_icon)
+		add = layout.operator("scene.comp_add_layer", text="Adjustment Layer", icon='STRIP_COLOR_01')
 		add.name = "Adjustment Layer"
 		add.type = "Adjustment"
-		add.icon = adj_icon
+		add.icon = 'STRIP_COLOR_01'
 		layout.separator()
 		for item in layer_node_data:
-			if bpy.app.version < (4, 5, 0) and item == "TEX_GRADIENT":
+			if item in layer_node_data_5_2 and bpy.app.version < (5, 2, 0):
 				continue
 			add = layout.operator("scene.comp_add_layer", text=layer_node_data[item][0], icon=layer_node_data[item][1])
 			add.name = layer_node_data[item][0]
@@ -1375,48 +1215,7 @@ class COMPOSITOR_MT_add_layer(bpy.types.Menu):
 			add.icon = layer_node_data[item][1]
 
 		layout.separator()
-		if bpy.app.version >= (4, 5, 0):
-			layout.menu("COMPOSITOR_MT_add_texture_layer", icon = "TEXTURE")
-		elif bpy.app.version < (4, 5, 0):
-			texture = texture_node_data['CompositorNodeTexture']
-			add = layout.operator("scene.comp_add_layer", text=texture[0], icon = "TEXTURE")
-			add.name = texture[0]
-			add.type = 'CompositorNodeTexture'
-			add.icon = texture[1]
-
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			if context.area.ui_type == 'CompositorNodeTree':
-				layout.separator()
-				layout.operator("scene.comp_add_layer_from_node", text="From Node", icon="NODE")
-
-class COMPOSITOR_MT_add_source_layer(bpy.types.Menu):
-	bl_label = "Source"
-	bl_options = {'SEARCH_ON_KEY_PRESS'}
-
-	def draw(self, context):
-		tree = get_scene_tree(context)
-		props = context.scene.compositor_layer_props
-		node_group = bpy.data.node_groups[props.compositor_panel]
-		compositor = node_group.compositor_props
-		layout = self.layout
-		for i, item in enumerate(props.source):
-			if item.type in {'COMPOSITOR', 'COMPOSITING'}:
-				if item.name == compositor.name:
-					continue
-				else:
-					node = tree.nodes.get(item.name)
-					compositor = tree.nodes.get(compositor.name)
-					connected = False
-					for link in tree.links:
-						if link.from_node == compositor and link.to_node == node:
-							connected = True
-							break
-					if connected:
-						continue
-
-			add = layout.operator("scene.comp_add_layer_socket", text=item.name, icon=item.icon)
-			add.name = item.name
-			add.icon = item.icon
+		layout.menu("COMPOSITOR_MT_add_texture_layer", icon = "TEXTURE")
 
 class COMPOSITOR_MT_add_comp_layer(bpy.types.Menu):
 	bl_label = "Compositor"
@@ -1438,7 +1237,7 @@ class COMPOSITOR_MT_add_texture_layer(bpy.types.Menu):
 	def draw(self, context):
 		layout = self.layout
 		for item in texture_node_data:
-			if bpy.app.version >= (5, 0, 0) and item == 'CompositorNodeTexture':
+			if item == 'CompositorNodeTexture':
 				continue
 			add = layout.operator("scene.comp_add_layer", text=texture_node_data[item][0])
 			add.name = texture_node_data[item][0]
@@ -1466,6 +1265,23 @@ class COMPOSITOR_MT_layers_specials(bpy.types.Menu):
 		layout.separator()
 		layout.operator("scene.comp_clear_layer", text="Clear Layer", icon='TRASH', emboss = False)
 
+class COMPOSITOR_PT_Layer_ColorSpace(bpy.types.Panel):
+	bl_space_type = 'NODE_EDITOR'
+	bl_region_type = 'HEADER'
+	bl_label = "In/Out ColorSpace"
+	bl_ui_units_x = 14
+
+	def draw(self, context):
+		props = context.scene.compositor_layer_props
+		node_group = bpy.data.node_groups[props.compositor_panel]
+		compositor = node_group.compositor_props
+		item = compositor.layer[compositor.layer_index]
+
+		layout = self.layout
+		layout.label(text="In/Out ColorSpace")
+		layout.prop(item, "in_colorspace", text="Input")
+		layout.prop(item, "out_colorspace", text="Output")
+
 def draw_layer(self, context, box):
 	addon_prefs = get_addon_preference(context)
 
@@ -1489,51 +1305,29 @@ def draw_layer(self, context, box):
 	if len(compositor.layer) > 0:
 		item = compositor.layer[compositor.layer_index]
 		
-		active = True
-		if item.type == "Source":
-			group_node = tree.nodes[compositor.name]
-			if item.socket:
-				input = f'{item.source}({item.socket})'
-			else:
-				input = item.source
-			connected = False
-			for link in tree.links:
-				if link.to_socket == group_node.inputs[input]:
-					connected = True
-					break
-		else:
-			connected = True
-
-		if item.type == "Source":
-			if not tree.nodes.get(item.source):
-				active = False
-			else:
-				active = (not tree.nodes[item.source].mute) and connected	
-
 		row = box.row(align=True)
 		row.label(text="", icon = item.icon)
 		row.prop(item, 'name', text="")
 		sub = row.row(align=True)
-		sub.enabled = active
 		sub.operator("scene.comp_duplicate_layer", text="", icon='DUPLICATE').index = compositor.layer_index
 		row.operator("scene.comp_remove_layer", text="", icon='X').index = compositor.layer_index
 		xbox = box.box()
 		xrow = xbox.row()
 		xrow.label(text = "Properties", icon = "PROPERTIES")
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			if item.type == "Compositor" and bpy.data.node_groups.get(item.source):
-				xrow.operator("scene.comp_edit_source", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
-		else:
-			if bpy.data.node_groups.get(item.source):
-				xrow.operator("scene.comp_edit_source", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
+		if item.type == "Compositor" and bpy.data.node_groups.get(item.source):
+			xrow.operator("scene.comp_edit_comp_layer", text="Edit Compositor", icon='NODE_COMPOSITING').name = item.source
 
 		mix_node = node_group.nodes.get(f"{item.name}.Mix")
-		sub_mix_node = node_group.nodes.get(f"{item.name}.Mix_Sub")
-		transform_node = node_group.nodes.get(f"{item.name}.Transform")
 
 		if addon_prefs.panel_type == "Expand":
 			row = xbox.row()
 			row.prop(props, 'properties_panel', expand=True)
+
+			if props.properties_panel != "Mask":
+				row = xbox.row(align=True)
+				row.label(text="In/Out ColorSpace", icon="FCURVE")
+				row.prop(item, "colorspace", text="")
+				row.popover(panel="COMPOSITOR_PT_Layer_ColorSpace", icon='DOWNARROW_HLT', text="")
 
 			if props.properties_panel == "Transfrom":
 				xbox.label(text = "Transform", icon = "ORIENTATION_LOCAL")
@@ -1541,31 +1335,18 @@ def draw_layer(self, context, box):
 				col.use_property_split = True
 				col.use_property_decorate = False
 
-				if bpy.app.version >= (5, 0, 0):
-					col.prop(mix_node.inputs[0], 'default_value', text="Blend")
-					col.prop(mix_node.inputs[1], 'default_value', text="Opacity")
-					col.separator()
-					row = col.row(align=True)
-					row.prop(mix_node.inputs[5], 'default_value', text="Position", index=0)
-					row.prop(mix_node.inputs[5], 'default_value', text="", index=1)
-					row = col.row(align=True)
-					row.prop(mix_node.inputs[7], 'default_value', text="Scale", index=0)
-					row.prop(mix_node.inputs[7], 'default_value', text="", index=1)
-					col.prop(mix_node.inputs[6], 'default_value', text="Rotation")
+				col.prop(mix_node.inputs[0], 'default_value', text="Blend")
+				col.prop(mix_node.inputs[1], 'default_value', text="Opacity")
+				col.separator()
+				row = col.row(align=True)
+				row.prop(mix_node.inputs[5], 'default_value', text="Position", index=0)
+				row.prop(mix_node.inputs[5], 'default_value', text="", index=1)
+				row = col.row(align=True)
+				row.prop(mix_node.inputs[7], 'default_value', text="Scale", index=0)
+				row.prop(mix_node.inputs[7], 'default_value', text="", index=1)
+				col.prop(mix_node.inputs[6], 'default_value', text="Rotation")
 
-				if bpy.app.version < (5, 0, 0):
-					col.prop(mix_node, 'blend_type', text="Blend Mode")
-					col.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
-					col.separator()
-					row = col.row(align=True)
-					row.prop(transform_node.inputs[1], 'default_value', text="Position")
-					row.prop(transform_node.inputs[2], 'default_value', text="")
-					row = col.row(align=True)
-					row.prop(transform_node.inputs[4], 'default_value', text="Scale")
-					row.prop(transform_node.inputs[5], 'default_value', text="")
-					col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
-
-				if item.type not in ["Source", "Adjustment"]:
+				if item.type not in ["Adjustment"]:
 					node = node_group.nodes.get(item.name)
 					xbox.label(text = "Layer Settings", icon = "CURRENT_FILE")	
 					col = xbox.column()
@@ -1610,8 +1391,8 @@ def draw_layer(self, context, box):
 			col.use_property_split = True
 			col.use_property_decorate = False
 
-			col.prop(mix_node, 'blend_type', text="Blend Mode")
-			col.prop(sub_mix_node.inputs[0], 'default_value', text="Mix")
+			col.prop(mix_node.inputs[0], 'default_value', text="Blend")
+			col.prop(mix_node.inputs[1], 'default_value', text="Opacity")
 
 			header, panel = xbox.panel(idname="Transform", default_closed=False)
 			header.label(text = "Transform", icon = "ORIENTATION_LOCAL")
@@ -1621,23 +1402,14 @@ def draw_layer(self, context, box):
 				col.use_property_split = True
 				col.use_property_decorate = False
 				row = col.row(align=True)
-				row.prop(transform_node.inputs[1], 'default_value', text="Position")
-				row.prop(transform_node.inputs[2], 'default_value', text="")
+				row.prop(mix_node.inputs[5], 'default_value', text="Position", index=0)
+				row.prop(mix_node.inputs[5], 'default_value', text="", index=1)
 				row = col.row(align=True)
-				row.prop(transform_node.inputs[4], 'default_value', text="Scale")
-				row.prop(transform_node.inputs[5], 'default_value', text="")
-				col.prop(transform_node.inputs[3], 'default_value', text="Rotation")
-				header, panel = col.panel(idname="Sampling", default_closed=True)
-				header.label(text = "Sampling")
-				if panel:
-					panel_col = panel.column()
-					panel_col.use_property_split = True
-					panel_col.use_property_decorate = False
-					panel_col.prop(transform_node.inputs[6], 'default_value', text="")
-					panel_col.prop(transform_node.inputs[7], 'default_value', text="")
-					panel_col.prop(transform_node.inputs[8], 'default_value', text="")
+				row.prop(mix_node.inputs[7], 'default_value', text="Scale", index=0)
+				row.prop(mix_node.inputs[7], 'default_value', text="", index=1)
+				col.prop(mix_node.inputs[6], 'default_value', text="Rotation")
 
-			if item.type not in ["Source", "Adjustment"]:
+			if item.type not in ["Adjustment"]:
 				node = node_group.nodes.get(item.name)
 				header, panel = xbox.panel(idname=item.name, default_closed=False)
 				header.label(text = "Layer Settings", icon = "CURRENT_FILE")
@@ -1649,6 +1421,19 @@ def draw_layer(self, context, box):
 					if len(node.outputs) > 1:
 						panel_box.prop(item, "channel", text="Channel")
 
+			header, panel = xbox.panel(idname="In/Out ColorSpace", default_closed=True)
+			header.label(text="In/Out ColorSpace", icon="FCURVE")
+			row = header.row(align=True)
+			row.alignment = 'RIGHT'
+			row.prop(item, "colorspace", text="")
+			if panel:
+				panel_box = panel.box()
+				col = panel_box.column()
+				col.use_property_split = True
+				col.use_property_decorate = False
+				col.prop(item, "in_colorspace", text="Input")
+				col.prop(item, "out_colorspace", text="Output")
+
 			header, panel = xbox.panel(idname="Effects", default_closed=False)
 			header.label(text = "Effects", icon = "SHADERFX")
 			row = header.row(align=True)
@@ -1658,7 +1443,7 @@ def draw_layer(self, context, box):
 			row.menu("COMPOSITOR_MT_effects_specials", icon='DOWNARROW_HLT', text="")
 			if panel:
 				panel_box = panel.box()
-				panel.active = item.fx
+				panel_box.active = item.fx
 				if item.effect:
 					draw_effect(self, context, panel_box)
 				else:
@@ -1682,9 +1467,6 @@ classes = (
 	Layer_Props,
 	LAYER_UL_LIST,
 	Add_OT_Layer,
-	Add_OT_Layer_Socket,
-	Add_OT_Layer_All_Socket,
-	Add_OT_Layer_From_Node,
 	Add_OT_Layer_Media,
 	Remove_OT_Layer,
 	Clear_OT_Layer,
@@ -1692,11 +1474,12 @@ classes = (
 	Copy_OT_Layer,
 	Move_OT_Layer,
 	Drag_OT_Layer,
+	Edit_OT_Comp_Layer,
 	COMPOSITOR_MT_add_layer,
-	COMPOSITOR_MT_add_source_layer,
 	COMPOSITOR_MT_add_comp_layer,
 	COMPOSITOR_MT_add_texture_layer,
 	COMPOSITOR_MT_layers_specials,
+	COMPOSITOR_PT_Layer_ColorSpace,
 		  )
 
 def register():

@@ -19,17 +19,8 @@ class Compositor_Props(bpy.types.PropertyGroup):
 
 	def update_name(self, context):
 		props = context.scene.compositor_layer_props
-		addon_prefs = get_addon_preference(context)
 
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			tree = get_scene_tree(context)
-			group_node = tree.nodes.get(self.sub_name)
-			node_group = bpy.data.node_groups.get(self.sub_name)
-			if group_node and node_group:
-				group_node.name = self.name
-				node_group.name = self.name
-		else:
-			context.scene.compositing_node_group.name = self.name
+		context.scene.compositing_node_group.name = self.name
 
 		props.compositor_panel = self.name
 
@@ -49,26 +40,9 @@ class New_OT_Compositor(bpy.types.Operator):
 	bl_description = "New Compositor"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	add_layer : bpy.props.BoolProperty(options={'HIDDEN'}, default=False)
-	from_source : bpy.props.BoolProperty(options={'HIDDEN'}, default=False)
-
-	def invoke(self, context, event):
-		addon_prefs = get_addon_preference(context)
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			if self.from_source:
-				self.add_layer = False
-			else:
-				if addon_prefs.new_compositor_option == 'First' and len(get_scene_compositor(context)) == 0:
-					self.add_layer = True
-				elif addon_prefs.new_compositor_option == 'Any':
-					self.add_layer = True
-
-		return self.execute(context)
-
 	def execute(self, context):
 		# Define props
 		addon_prefs = get_addon_preference(context)
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 		
 		existing_names = [node_group.name for node_group in bpy.data.node_groups]
@@ -79,21 +53,11 @@ class New_OT_Compositor(bpy.types.Operator):
 		node_group = bpy.data.node_groups.new(type='CompositorNodeTree', name=name)
 		node_group.use_fake_user = True
 
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			group_node = tree.nodes.new("CompositorNodeGroup")
-			group_node.node_tree = node_group
-			group_node.name = node_group.name
-			group_node.location = (-100,0)
-
-		else:
-			context.scene.compositing_node_group = node_group
-			tree = get_scene_tree(context)
+		context.scene.compositing_node_group = node_group
 
 		item = node_group.compositor_props
 		item.sub_name = node_group.name
 		item.name = node_group.name
-
-		links = tree.links
 
 		GroupInput = node_group.nodes.new("NodeGroupInput")
 		GroupInput.location[0] = -900
@@ -108,41 +72,18 @@ class New_OT_Compositor(bpy.types.Operator):
 
 		node_group.links.new(GroupInput.outputs[0], GroupOutput.inputs[0])
 
-		render_node = tree.nodes.get("Render Layers")
-		viewer_node = tree.nodes.get("Viewer")
-
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			if len(get_scene_compositor(context)) > 1:
-				sub_node = tree.nodes.get(get_scene_compositor(context)[-2])
-				if sub_node:
-					group_node.location = (sub_node.location[0],sub_node.location[1]-350)
-
-			if not viewer_node:
-				viewer_node = tree.nodes.new("CompositorNodeViewer")
-				viewer_node.location = (group_node.location[0] + 200, group_node.location[0] - 50)
-
-			links.new(group_node.outputs[0], viewer_node.inputs[0])
-			group_node.inputs[0].default_value = (0,0,0,1)
-
 		props.compositor_panel = node_group.name
 
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			if render_node and self.add_layer:
-				bpy.ops.scene.comp_add_layer(name="Render Layers", icon="RENDER_RESULT", type="Source")
-		else:
+		if addon_prefs.new_compositor_option == 'Any':
 			bpy.ops.scene.comp_add_layer(name="Render Layers", icon="RENDER_RESULT", type="CompositorNodeRLayers")
+		elif addon_prefs.new_compositor_option == 'First':
+			if len(get_scene_compositor(context)) == 1:
+				bpy.ops.scene.comp_add_layer(name="Render Layers", icon="RENDER_RESULT", type="CompositorNodeRLayers")
 				
 		if len(get_scene_compositor(context)) == 1:
 			bpy.ops.scene.comp_reload_output()
 			if props.output:
 				props.output[0].composite = node_group.name
-
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			bpy.ops.scene.comp_reload_source()
-		
-		self.from_source = False
-		self.add_layer = False
-
 		return {"FINISHED"}
 
 class Duplicate_OT_Compositor(bpy.types.Operator):
@@ -155,52 +96,16 @@ class Duplicate_OT_Compositor(bpy.types.Operator):
 
 	def execute(self, context):
 		# Define props
-		addon_prefs = get_addon_preference(context)
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
-
-		links = tree.links
 		name = self.name
 
 		# Create node group
 		node_group = bpy.data.node_groups[name].copy()
 		node_group.compositor_props.sub_name = node_group.name
 
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			group_node = tree.nodes.new("CompositorNodeGroup")
-			group_node.node_tree = node_group
-			group_node.location = (-100,0)
-			group_node.name = node_group.name
-
 		node_group.compositor_props.name = node_group.name
-		
-		viewer_node = tree.nodes.get("Viewer")
-
-		input_node = None
-
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			if len(get_scene_compositor(context)) > 1:
-				sub_node = tree.nodes.get(get_scene_compositor(context)[-2])
-				if sub_node:
-					group_node.location = (sub_node.location[0],sub_node.location[1]-350)
-					
-			if not viewer_node:
-				viewer_node = tree.nodes.new("CompositorNodeViewer")
-				viewer_node.location = (group_node.location[0] + 200, group_node.location[0] - 50)
-
-			if input_node:
-				links.new(input_node.outputs[0], group_node.inputs[0])
-			else:
-				links.new(group_node.outputs[0], viewer_node.inputs[0])
-
-			for link in links:
-				if link.to_node == tree.nodes[name]:
-					links.new(link.from_socket, group_node.inputs[link.to_socket.name])
 
 		props.compositor_panel = node_group.name
-
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			bpy.ops.scene.comp_reload_source()
 
 		return {"FINISHED"}
 
@@ -213,7 +118,6 @@ class Remove_OT_Compositor(bpy.types.Operator):
 	name : bpy.props.StringProperty(options={'HIDDEN'})
 
 	def execute(self, context):
-		addon_prefs = get_addon_preference(context)
 		tree = get_scene_tree(context)
 		links = tree.links
 
@@ -227,7 +131,6 @@ class Remove_OT_Compositor(bpy.types.Operator):
 		group_node = tree.nodes.get(name)
 		node_group = bpy.data.node_groups.get(name)
 
-		render_node = tree.nodes.get("Render Layers")
 		viewer_node = tree.nodes.get("Viewer")
 
 		if len(get_scene_compositor(context)) > 1:
@@ -245,28 +148,20 @@ class Remove_OT_Compositor(bpy.types.Operator):
 		if node_group:
 			bpy.data.node_groups.remove(node_group)
 
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			bpy.ops.scene.comp_reload_source()
-		else:
-			if props.compositor_panel != "":
-				context.scene.compositing_node_group = bpy.data.node_groups[props.compositor_panel]
+		if props.compositor_panel != "":
+			context.scene.compositing_node_group = bpy.data.node_groups[props.compositor_panel]
 
 		return {"FINISHED"}
 
 def draw_compositor(self, context, box):
 	props = context.scene.compositor_layer_props
 
-	if bpy.app.version >= (4, 5, 0):
-		if len(get_scene_compositor(context)) > 1:
-			row = box.row()
-			if len(get_scene_compositor(context)) > (context.region.width/75):
-				row.prop(props, 'compositor_panel', text="")
-			else:
-				row.prop(props, 'compositor_panel', expand = True)
-
-	elif bpy.app.version < (4, 5, 0):
-		if len(get_scene_compositor(context)) > 1:
-			box.prop(props, 'compositor_panel', text="")
+	if len(get_scene_compositor(context)) > 1:
+		row = box.row()
+		if len(get_scene_compositor(context)) > (context.region.width/75):
+			row.prop(props, 'compositor_panel', text="")
+		else:
+			row.prop(props, 'compositor_panel', expand = True)
 
 	if len(get_scene_compositor(context)) == 0:
 		box.operator("scene.comp_new_compositor", text="New Compositor", icon='ADD')

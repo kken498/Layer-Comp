@@ -1,6 +1,5 @@
 import bpy
 from .defs import *
-from .unity.source import Source_Props
 from .unity.output import Output_Props
 from itertools import chain
 from bpy.app.translations import (
@@ -10,9 +9,7 @@ from bpy_extras.node_utils import connect_sockets
 
 class Compositing_Layer_Props(bpy.types.PropertyGroup):
 	def update_panel(self, context):
-		if self.panel == 'Source':
-			bpy.ops.scene.comp_reload_source()
-		elif self.panel == 'Compositor':
+		if self.panel == 'Compositor':
 			bpy.ops.scene.comp_reload_source()
 		elif self.panel == 'Output':
 			bpy.ops.scene.comp_reload_output()
@@ -24,24 +21,10 @@ class Compositing_Layer_Props(bpy.types.PropertyGroup):
 		return list
 	
 	def update_compositor_panel(self, context):
-		addon_prefs = get_addon_preference(context)
-		if bpy.app.version >= (5, 0, 0) and addon_prefs.compositor_type == '5.0':
-			context.scene.compositing_node_group = bpy.data.node_groups.get(self.compositor_panel)
-		else:
-			tree = get_scene_tree(context)
-			viewer_node = tree.nodes.get("Viewer")
-			group_node = tree.nodes.get(self.compositor_panel)
-			if not viewer_node:
-				viewer_node = tree.nodes.new("CompositorNodeViewer")
-				viewer_node.location = (group_node.location[0] + 200, group_node.location[0] - 50)
-			if group_node.outputs:
-				tree.links.new(group_node.outputs[0], viewer_node.inputs[0])
+		context.scene.compositing_node_group = bpy.data.node_groups.get(self.compositor_panel)
 
 	def panel_item(self, context):
-		addon_prefs = get_addon_preference(context)
 		items = []
-		if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-			items.append(('Source', 'Source', ''))
 		items.append(('Compositor', 'Compositor', ''))
 		items.append(('Output', 'Output', ''))
 		return items
@@ -59,9 +42,6 @@ class Compositing_Layer_Props(bpy.types.PropertyGroup):
 							description = "Properties Panel"
 									)
 
-	source : bpy.props.CollectionProperty(type=Source_Props)
-	source_index : bpy.props.IntProperty(name = "Source")
-	
 	compositor_panel : bpy.props.EnumProperty(
 						name='Compositor Panel',
 						description = "Compositor Panel",
@@ -86,6 +66,7 @@ class Align_OT_Node_Tree(bpy.types.Operator):
 		compositor = node_group.compositor_props
 		GroupInput = node_group.nodes.get("Group Input")
 		GroupOutput = node_group.nodes.get("Group Output")
+		viewer_node = node_group.nodes.get("Viewer")
 
 		frame = None
 
@@ -101,6 +82,7 @@ class Align_OT_Node_Tree(bpy.types.Operator):
 
 		if frame:
 			GroupOutput.location = (frame.location[0] + frame.width + 200, frame.location[1])
+			viewer_node.location = (GroupOutput.location[0], GroupOutput.location[1] + 250)
 			for node in node_group.nodes:
 				if node.type == "OUTPUT_FILE":
 					node.location = (GroupOutput.location[0], node.location[1])

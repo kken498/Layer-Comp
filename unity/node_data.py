@@ -1,16 +1,8 @@
-
-effect_node_data_5_0 = {}
-effect_node_data_5_0['CompositorNodeColorBalance'] = ['Color Balance', 'MOD_WHITE_BALANCE']
-effect_node_data_5_0['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'MOD_BRIGHTNESS_CONTRAST']
-effect_node_data_5_0['CompositorNodeCurveRGB'] = ['RGB Curve', 'MOD_CURVES']
-effect_node_data_5_0['CompositorNodeHueCorrect'] = ['Hue Correct', 'MOD_HUE_CORRECT']
-effect_node_data_5_0['CompositorNodeTonemap'] = ['Tonemap', 'MOD_TONEMAP']
-
 effect_node_data = {}
-effect_node_data['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'IMAGE_ALPHA']
+effect_node_data['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'MOD_BRIGHTNESS_CONTRAST']
 effect_node_data['CompositorNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
 effect_node_data['ShaderNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
-effect_node_data['CompositorNodeColorBalance'] = ['Color Balance', 'COLOR']
+effect_node_data['CompositorNodeColorBalance'] = ['Color Balance', 'MOD_WHITE_BALANCE']
 
 
 effect_node_data['CompositorNodeColorCorrection'] = ['Color Correction', 'SHADERFX']
@@ -18,10 +10,10 @@ effect_node_data['CompositorNodeExposure'] = ['Exposure', 'SORTBYEXT']
 effect_node_data['CompositorNodeGamma'] = ['Gamma', 'SEQ_HISTOGRAM']
 effect_node_data['ShaderNodeGamma'] = ['Gamma', 'SEQ_HISTOGRAM']
 
-effect_node_data['CompositorNodeHueCorrect'] = ['Hue Correct', 'MOD_HUE_SATURATION']
+effect_node_data['CompositorNodeHueCorrect'] = ['Hue Correct', 'MOD_HUE_CORRECT']
 effect_node_data['CompositorNodeHueSat'] = ['HSV', 'MOD_HUE_SATURATION']
-effect_node_data['CompositorNodeCurveRGB'] = ['RGB Curve', 'NORMALIZE_FCURVES']
-effect_node_data['CompositorNodeTonemap'] = ['Tonemap', 'RIGID_BODY']
+effect_node_data['CompositorNodeCurveRGB'] = ['RGB Curve', 'MOD_CURVES']
+effect_node_data['CompositorNodeTonemap'] = ['Tonemap', 'MOD_TONEMAP']
 effect_node_data['CompositorNodeInvert'] = ['Invert Color', 'IMAGE_RGB_ALPHA']
 effect_node_data['CompositorNodeRGBToBW'] = ['Black/White', 'IMAGE_RGB']
 effect_node_data['CompositorNodeConvertColorSpace'] = ['Convert ColorSpace', 'SEQ_SPLITVIEW']
@@ -70,26 +62,22 @@ effect_node_data['CompositorNodeCornerPin'] = ['Corner Pin', 'PINNED']
 effect_node_data['CompositorNodeCrop'] = ['Crop', 'AREA_DOCK']
 effect_node_data['CompositorNodeDisplace'] = ['Displace', 'MOD_DISPLACE']
 effect_node_data['CompositorNodeFlip'] = ['Flip', 'MOD_MIRROR']
-
-source_node_data = {}
-source_node_data['CompositorNodeRLayers'] = ['Render Layers', 'RENDER_RESULT']
-source_node_data['CompositorNodeImage'] = ['Image', 'OUTLINER_OB_IMAGE']
-source_node_data['CompositorNodeMovieClip'] = ['Movie', 'SEQUENCE']
-source_node_data['CompositorNodeRGB'] = ['Solid', 'SNAP_FACE']
-source_node_data['CompositorNodeBokehImage'] = ['Bokeh Image', 'SEQ_CHROMA_SCOPE']
-source_node_data['CompositorNodeGroup'] = ['Compositor', 'NODE_COMPOSITING']
+effect_node_data['CompositorNodeSplit'] = ['Split', 'SPLIT_VERTICAL']
 
 output_node_data = {}
-output_node_data['CompositorNodeComposite'] = ['Composite', 'NODE_COMPOSITING']
 output_node_data['CompositorNodeOutputFile'] = ['File Output', 'OUTPUT']
 
 layer_node_data = {}
 layer_node_data['CompositorNodeRLayers'] = ['Render Layers', 'RENDER_RESULT']
 layer_node_data['CompositorNodeImage'] = ['Image', 'OUTLINER_OB_IMAGE']
-layer_node_data['CompositorNodeMovieClip'] = ['Movie Clip', 'SEQUENCE']
+layer_node_data['CompositorNodeMovieClip'] = ['Movie', 'SEQUENCE']
+layer_node_data['CompositorNodeStringToImage'] = ['Text', 'FONTPREVIEW']
 layer_node_data['CompositorNodeRGB'] = ['Solid', 'SNAP_FACE']
+layer_node_data['CompositorNodeBlankImage'] = ['Blank', 'IMAGE_ALPHA']
 layer_node_data['ShaderNodeTexGradient'] = ['Gradient Texture', 'NODE_TEXTURE']
 layer_node_data['CompositorNodeBokehImage'] = ['Bokeh Image', 'SEQ_CHROMA_SCOPE']
+
+layer_node_data_5_2 = ['CompositorNodeStringToImage', 'CompositorNodeBlankImage']
 
 texture_node_data = {}
 texture_node_data['CompositorNodeTexture'] = ['Texture', 'TEXTURE']
@@ -112,11 +100,11 @@ feature_node_data['CompositorNodeColorInnerShadow'] = ['Color InnerShadow', 'ANT
 feature_node_data['CompositorNodeColorInnerShadowSingle'] = ['Color InnerShadow(Single)', 'ANTIALIASED']
 feature_node_data['CompositorNodeDropShadow'] = ['DropShadow', 'SELECT_SUBTRACT']
 feature_node_data['CompositorNodeInnerShadow'] = ['InnerShadow', 'SELECT_INTERSECT']
-feature_node_data['CompositorNodeRimLight'] = ['Rim Light', 'LIGHT_AREA']
+feature_node_data['CompositorNodeColorRimLight'] = ['Color Rim Light', 'LIGHT_AREA']
 feature_node_data['CompositorNodeOuterGlow'] = ['Outer Glow', 'LIGHT_SUN']
-feature_node_data['CompositorNodeRelight'] = ['Relight', 'LIGHT_POINT']
 feature_node_data['CompositorNodeBoundaryLine'] = ['BoundaryLine', 'MOD_LINEART']
 feature_node_data['CompositorNodePaintFilter'] = ['Paint Filter', 'BRUSHES_ALL']
+feature_node_data['CompositorNodeAutoExposure'] = ['Auto Exposure', 'SORTBYEXT']
 feature_node_data['CompositorNodeSpotExposure'] = ['Spot Exposure', 'LIGHT_SPOT']
 feature_node_data['CompositorNodeCameraLensBlur'] = ['Camera Lens Blur', 'VIEW_CAMERA']
 feature_node_data['CompositorNodeChromaticAberration'] = ['Chromatic Aberration', 'SEQ_CHROMA_SCOPE']
@@ -125,15 +113,16 @@ feature_node_data['CompositorNodeEdgeSoftness'] = ['Edge Softness', 'PROP_OFF']
 feature_node_data['CompositorNodeSwingTilt'] = ['Swing-Tilt', 'AREA_SWAP']
 feature_node_data['CompositorNodeShutterStreak'] = ['Shutter Streak', 'CAMERA_STEREO']
 feature_node_data['CompositorNodeHalation'] = ['Halation', 'SHADERFX']
+feature_node_data['CompositorNodeRelight'] = ['Relight', 'LIGHT_POINT']
+feature_node_data['CompositorNodeRimLight'] = ['Rim Light', 'LIGHT_AREA']
+feature_node_data['CompositorNodeSceneRimLight'] = ['Scene Rim Light', 'LIGHT_SUN']
 feature_node_data['CompositorNodeBlurRGB'] = ['Blur RGB', 'PROP_CON']
 feature_node_data['CompositorNodeTwitch'] = ['Twitch', 'GHOST_ENABLED']
 feature_node_data['CompositorNodeRenoiser'] = ['Renoiser', 'TEXTURE']
 feature_node_data['CompositorNodeSeparateRGBA'] = ['Separate RGBA', 'PARTICLES']
+feature_node_data['CompositorNodeUnmult'] = ['Unmult', 'MOD_UVPROJECT']
 feature_node_data['CompositorNodeWiggleTransfrom'] = ['Wiggle Transfrom', 'CON_ROTLIKE']
 feature_node_data['CompositorNodeTile'] = ['Tile', 'SNAP_VERTEX']
-
-feature_node_data_4_5 = ['CompositorNodeSwingTilt', 'CompositorNodeTwitch', 'CompositorNodeWiggleTransfrom']
-feature_node_data_5_0 = ['CompositorNodeTile']
 
 socket_data = {}
 socket_data['RGBA'] = 'NODE_SOCKET_RGBA'

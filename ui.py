@@ -1,6 +1,6 @@
 import bpy
 from .defs import *
-from .unity import source, compositor, output, layer
+from .unity import compositor, output, layer
 
 class Compositor_Layer:
 	def draw(self, context):
@@ -17,11 +17,6 @@ class Compositor_Layer:
 		row = box.row()
 		sub = row.row()
 		sub.label(text = "Compositing", icon = "NODE_COMPOSITING")
-
-		if bpy.app.version < (5, 0, 0):
-			if scene.use_nodes == False:
-				box.prop(scene, "use_nodes", text = "Compositor Use Nodes", icon = "NODETREE", toggle = True)
-				return
 
 		if hasattr(context.space_data, 'shading'):
 			row = row.row()
@@ -50,9 +45,7 @@ class Compositor_Layer:
 		row = box.row()
 		row.prop(props, "panel", expand=True)
 
-		if props.panel == 'Source':
-			source.draw_source(self, context, box)
-		elif props.panel == 'Compositor':
+		if props.panel == 'Compositor':
 			compositor.draw_compositor(self, context, box)
 			if len(get_scene_compositor(context)) > 0:
 				layer.draw_layer(self, context, box)
@@ -84,19 +77,14 @@ class Compositor_Layer:
 			if panel:
 				xbox = panel.box()
 
-				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-					type = "Effects"
-				else:
-					row = xbox.row(align=True)
-					row.prop(addon_prefs, 'preset_type', expand=True)
-					row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
-					type = addon_prefs.preset_type
+				row = xbox.row(align=True)
+				row.prop(addon_prefs, 'preset_type', expand=True)
+				row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
+				type = addon_prefs.preset_type
 				
 				col = xbox.column()
 				row = col.row(align=True)
 				row.operator("scene.comp_new_preset", text="Create New Preset", icon='ADD').type = type
-				if bpy.app.version < (5, 0, 0) or addon_prefs.compositor_type == 'Legacy':
-					row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
 				if context.area.ui_type == 'CompositorNodeTree' and type == 'Effects':
 					col.operator("scene.comp_save_preset", text='Save selected as preset', icon = "FILE_TICK").type = type
 				if type == 'Compositors':
@@ -142,7 +130,7 @@ class NODE_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):
 
 	@classmethod
 	def poll(cls, context):
-		if bpy.app.version >= (5, 0, 0) and context.space_data.node_tree_sub_type != 'SCENE':
+		if context.space_data.node_tree_sub_type != 'SCENE':
 			return False
 		return context.area.ui_type == 'CompositorNodeTree'
 
@@ -158,6 +146,19 @@ class VIEW_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):
 		addon_prefs = get_addon_preference(context)
 		return addon_prefs.view3d
 
+class IMAGE_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):
+	bl_space_type = 'IMAGE_EDITOR'
+	bl_region_type = 'UI'
+	bl_label = "Layer Comp"
+	bl_idname = "IMAGE_PT_Compositor_Layer"
+	bl_category = "Layer Comp"
+
+	@classmethod
+	def poll(cls, context):
+		if context.space_data.image.name in ['Render Result', 'Viewer Node']:
+			return True
+		return False
+
 class COMPOSITOR_PT_options(bpy.types.Panel):
 	bl_space_type = 'NODE_EDITOR'
 	bl_region_type = 'HEADER'
@@ -171,8 +172,6 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 		layout.label(text="User Interface")
 		layout.use_property_split = True
 		layout.use_property_decorate = False
-		if bpy.app.version >= (5, 0, 0):
-			layout.row().prop(addon_prefs, "compositor_type", text="Compositor", expand = True)
 			
 		col = layout.column(heading="Panel", align=True)
 		col.prop(addon_prefs, "view3d", text="3D Viewport Panel")
@@ -183,7 +182,7 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 		row = col.row()
 		row.prop(addon_prefs, "layer_name", text="Layer Name", expand=True)
 
-		row = col.row(heading="Layer Display", align=True)
+		row = col.row(heading="Display", align=True)
 		row.prop(addon_prefs, "label", text="Label", toggle = True)
 		row.prop(addon_prefs, "fx_toggle", text="FX", toggle = True)
 		row.prop(addon_prefs, "blend_mode", text="Blend", toggle = True)
@@ -193,9 +192,7 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 		row.prop(addon_prefs, "panel_type", text="Panel Type", expand=True)
 		layout.label(text="Operator")
 		col = layout.column(heading="", align=True)
-		colrow = col.row()
-		colrow.active = addon_prefs.compositor_type != '5.0'
-		colrow.prop(addon_prefs, "new_compositor_option", text="New Compositor", expand = True)
+		col.row().prop(addon_prefs, "new_compositor_option", text="Add Render Layer", expand = True)
 		col = layout.column(heading="", align=True)
 		col.row().prop(addon_prefs, "duplicate_layer_option", text="Duplicate Layer", expand = True)
 		col.row().prop(addon_prefs, "duplicate_effect_option", text="Effect", expand = True)
@@ -203,6 +200,7 @@ class COMPOSITOR_PT_options(bpy.types.Panel):
 classes = (
 	NODE_PT_Compositor_Layer,
 	VIEW_PT_Compositor_Layer,
+	IMAGE_PT_Compositor_Layer,
 	COMPOSITOR_PT_options
 		  )
 

@@ -10,13 +10,6 @@ class AddonPref_Properties:
 									],
 							description = "Presets Type"
 									)
-	
-	compositor_type : bpy.props.EnumProperty(default = "5.0",
-							items = [('Legacy', 'Legacy', ''),
-									('5.0', '5.0', ''),
-									],
-							description = "Compositor system type, Legacy which is using node group as a compositor. 5.0 will combine compositor node group assets. (Both cannot be used in the same project)"
-									)
 
 	layer_name : bpy.props.EnumProperty(default = "Layer",
 							items = [('Layer', 'Layer', ''),
@@ -75,8 +68,6 @@ class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 		box.use_property_split = True
 		box.use_property_decorate = False
 		box.scale_x= 0.4
-		if bpy.app.version >= (5, 0, 0):
-			box.row().prop(self, "compositor_type", text="Compositor", expand = True)
 		
 		box.label(text="UI Settings")
 		col = box.column(heading="Panel", align=True)
@@ -88,7 +79,7 @@ class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 		sub = col.row()
 		sub.prop(self, "layer_name", text="Layer Name", expand=True)
 
-		sub = col.row(heading="Layer Display", align=True)
+		sub = col.row(heading="Display", align=True)
 		sub.prop(self, "label", text="Label", toggle = True)
 		sub.prop(self, "fx_toggle", text="FX", toggle = True)
 		sub.prop(self, "blend_mode", text="Blend", toggle = True)
@@ -98,9 +89,7 @@ class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 		sub.prop(self, "panel_type", text="Panel Type", expand=True)
 		box.label(text="Operator")
 		col = box.column(heading="", align=True)
-		colrow = col.row()
-		colrow.active = self.compositor_type != '5.0'
-		colrow.prop(self, "new_compositor_option", text="New Compositor", expand = True)
+		col.row().prop(self, "new_compositor_option", text="Add Render Layer", expand = True)
 		col = box.column(heading="", align=True)
 		col.row().prop(self, "duplicate_layer_option", text="Duplicate Layer", expand = True)
 		col.row().prop(self, "duplicate_effect_option", text="Effect", expand = True)
@@ -108,13 +97,10 @@ class AddonPreferences(bpy.types.AddonPreferences, AddonPref_Properties):
 		box = row.box()
 		colbox = box.column()
 		
-		if bpy.app.version < (5, 0, 0) or self.compositor_type == 'Legacy':
-			type = "Effects"
-		else:
-			row = colbox.row(align=True)
-			row.prop(self, 'preset_type', expand=True)
-			row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
-			type = self.preset_type
+		row = colbox.row(align=True)
+		row.prop(self, 'preset_type', expand=True)
+		row.menu("COMPOSITOR_MT_preset_specials", icon='DOWNARROW_HLT', text="")
+		type = self.preset_type
 		
 		presets = get_presets(type)
 		if len(presets) > 0:
