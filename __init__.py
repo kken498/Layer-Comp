@@ -3,6 +3,7 @@ from . import(
     unity,
     preference,
     ui,
+    menu,
 )
 
 module_list = (
@@ -10,6 +11,7 @@ module_list = (
     layer_comp,
     preference,
     ui,
+    menu,
 )
 
 def register():

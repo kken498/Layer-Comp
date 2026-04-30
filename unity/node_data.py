@@ -3,13 +3,10 @@ effect_node_data['CompositorNodeBrightContrast'] = ['Birghtness / Contrast', 'MO
 effect_node_data['CompositorNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
 effect_node_data['ShaderNodeValToRGB'] = ['Color Ramp', 'NODE_TEXTURE']
 effect_node_data['CompositorNodeColorBalance'] = ['Color Balance', 'MOD_WHITE_BALANCE']
-
-
 effect_node_data['CompositorNodeColorCorrection'] = ['Color Correction', 'SHADERFX']
 effect_node_data['CompositorNodeExposure'] = ['Exposure', 'SORTBYEXT']
 effect_node_data['CompositorNodeGamma'] = ['Gamma', 'SEQ_HISTOGRAM']
 effect_node_data['ShaderNodeGamma'] = ['Gamma', 'SEQ_HISTOGRAM']
-
 effect_node_data['CompositorNodeHueCorrect'] = ['Hue Correct', 'MOD_HUE_CORRECT']
 effect_node_data['CompositorNodeHueSat'] = ['HSV', 'MOD_HUE_SATURATION']
 effect_node_data['CompositorNodeCurveRGB'] = ['RGB Curve', 'MOD_CURVES']

@@ -58,7 +58,7 @@ def append_node(type, name, preset, nodes):
 	blendfile = os.path.join(filepath, f'{preset}.blend')
 
 	if name not in bpy.data.node_groups:
-		with bpy.data.libraries.load(blendfile) as (data_from, data_to):
+		with bpy.data.libraries.load(blendfile,link=True) as (data_from, data_to):
 			data_to.node_groups = [name]
 
 	node_group = bpy.data.node_groups[name]

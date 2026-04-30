@@ -5,7 +5,6 @@ from itertools import chain
 from bpy.app.translations import (
     pgettext_rpt as rpt_,
 )
-from bpy_extras.node_utils import connect_sockets
 
 class Compositing_Layer_Props(bpy.types.PropertyGroup):
 	def update_panel(self, context):
@@ -103,7 +102,7 @@ class Rest_OT_Node(bpy.types.Operator):
 		node_active = node_group.nodes.get(self.node)
 
 		node_selected = [node_active]
-		node_ignore = ["FRAME", "REROUTE", "GROUP", "SIMULATION_INPUT", "SIMULATION_OUTPUT"]
+		node_ignore = ["FRAME", "REROUTE", "SIMULATION_INPUT", "SIMULATION_OUTPUT"]
 
 		active_node_name = node_active.name if node_active.select else None
 		valid_nodes = [n for n in node_selected if n.type not in node_ignore]
@@ -152,14 +151,11 @@ class Rest_OT_Node(bpy.types.Operator):
 			node_tree = node.id_data
 			props_to_copy = 'bl_idname name location height width'.split(' ')
 
-			reconnections_node = {}
 			reconnections = []
 			mappings = chain.from_iterable([node.inputs, node.outputs])
 			for i in (i for i in mappings if i.is_linked):
 				for L in i.links:
-					reconnections_node[L.from_node.name] = L.from_socket.name
-					reconnections_node[L.to_node.name] = L.to_socket.name
-					reconnections.append([L.from_node.name, L.to_node.name])
+					reconnections.append([L.from_node.name, L.from_socket.name, L.to_node.name, L.to_socket.name])
 
 			props = {j: getattr(node, j) for j in props_to_copy}
 
@@ -168,6 +164,9 @@ class Rest_OT_Node(bpy.types.Operator):
 
 			for prop in props_to_copy:
 				setattr(new_node, prop, props[prop])
+
+			if node.type == "GROUP":
+				new_node.node_tree = node.node_tree
 
 			nodes = node_tree.nodes
 			nodes.remove(node)
@@ -179,10 +178,8 @@ class Rest_OT_Node(bpy.types.Operator):
 
 			new_node.mute = node_mute
 
-			for str_from, str_to in reconnections:
-				output = reconnections_node[str_from]
-				input = reconnections_node[str_to]
-				node_group.links.new(node_group.nodes[str_from].outputs[output], node_group.nodes[str_to].inputs[input])
+			for link in reconnections:
+				node_group.links.new(node_group.nodes[link[0]].outputs[link[1]], node_group.nodes[link[2]].inputs[link[3]])
 
 			new_node.select = False
 			success_names.append(new_node.name)
