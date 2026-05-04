@@ -59,6 +59,7 @@ class COMPOSITOR_MT_add_effects(CompositorAddMenu, bpy.types.Menu):
 		layout.separator()
 		layout.label(text="Feature", icon="SHADERFX")
 		layout.menu("COMPOSITOR_MT_add_effects_features_color")
+		layout.menu("COMPOSITOR_MT_add_effects_features_camera")
 		layout.menu("COMPOSITOR_MT_add_effects_features_looks")
 		layout.menu("COMPOSITOR_MT_add_effects_features_3d")
 		layout.menu("COMPOSITOR_MT_add_effects_features_other")
@@ -188,6 +189,24 @@ class COMPOSITOR_MT_add_effects_features_color(CompositorAddMenu, bpy.types.Menu
 		self.operator_add_effect(layout, "CompositorNodeUnmult")
 		self.operator_add_effect(layout, "CompositorNodeSeparateRGBA")
 
+class COMPOSITOR_MT_add_effects_features_camera(CompositorAddMenu, bpy.types.Menu):
+	bl_label = "Camera"
+	bl_options = {'SEARCH_ON_KEY_PRESS'}
+
+	def draw(self, context):
+		layout = self.layout
+		self.operator_add_effect(layout, "CompositorNodeAutoExposure")
+		self.operator_add_effect(layout, "CompositorNodeSpotExposure")
+		self.operator_add_effect(layout, "CompositorNodeCameraLensBlur")
+		self.operator_add_effect(layout, "CompositorNodeLensDirt")
+		self.operator_add_effect(layout, "CompositorNodeSwingTilt")
+		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
+		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
+		self.operator_add_effect(layout, "CompositorNodeVignette")
+		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
+		self.operator_add_effect(layout, "CompositorNodeRadialBlur")
+		self.operator_add_effect(layout, "CompositorNodeRenoiser")
+
 class COMPOSITOR_MT_add_effects_features_looks(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Looks"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -195,19 +214,10 @@ class COMPOSITOR_MT_add_effects_features_looks(CompositorAddMenu, bpy.types.Menu
 	def draw(self, context):
 		version = bpy.app.version
 		layout = self.layout
-		self.operator_add_effect(layout, "CompositorNodeAutoExposure")
-		self.operator_add_effect(layout, "CompositorNodeSpotExposure")
-		self.operator_add_effect(layout, "CompositorNodeCameraLensBlur")
-		self.operator_add_effect(layout, "CompositorNodeSwingTilt")
-		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
-		self.operator_add_effect(layout, "CompositorNodeVignette")
-		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
-		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
 		self.operator_add_effect(layout, "CompositorNodeHalation")
 		self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeBlurRGB")
 		self.operator_add_effect(layout, "CompositorNodeTwitch")
-		self.operator_add_effect(layout, "CompositorNodeRenoiser")
 
 class COMPOSITOR_MT_add_effects_features_3d(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "3D"
@@ -251,6 +261,7 @@ class COMPOSITOR_MT_add_nodes_features(CompositorAddMenu, bpy.types.Menu):
 		version = bpy.app.version
 		layout = self.layout
 		layout.menu("COMPOSITOR_MT_add_nodes_features_color")
+		layout.menu("COMPOSITOR_MT_add_nodes_features_camera")
 		layout.menu("COMPOSITOR_MT_add_nodes_features_looks")
 		layout.menu("COMPOSITOR_MT_add_nodes_features_3d")
 		layout.menu("COMPOSITOR_MT_add_nodes_features_other")
@@ -275,6 +286,24 @@ class COMPOSITOR_MT_add_nodes_features_color(CompositorAddMenu, bpy.types.Menu):
 		self.operator_add_node(layout, "CompositorNodeUnmult")
 		self.operator_add_node(layout, "CompositorNodeSeparateRGBA")
 
+class COMPOSITOR_MT_add_nodes_features_camera(CompositorAddMenu, bpy.types.Menu):
+	bl_label = "Camera"
+	bl_options = {'SEARCH_ON_KEY_PRESS'}
+
+	def draw(self, context):
+		layout = self.layout
+		self.operator_add_node(layout, "CompositorNodeAutoExposure")
+		self.operator_add_node(layout, "CompositorNodeSpotExposure")
+		self.operator_add_node(layout, "CompositorNodeCameraLensBlur")
+		self.operator_add_node(layout, "CompositorNodeLensDirt")
+		self.operator_add_node(layout, "CompositorNodeSwingTilt")
+		self.operator_add_node(layout, "CompositorNodeShutterStreak")
+		self.operator_add_node(layout, "CompositorNodeChromaticAberration")
+		self.operator_add_node(layout, "CompositorNodeVignette")
+		self.operator_add_node(layout, "CompositorNodeEdgeSoftness")
+		self.operator_add_node(layout, "CompositorNodeRadialBlur")
+		self.operator_add_node(layout, "CompositorNodeRenoiser")
+
 class COMPOSITOR_MT_add_nodes_features_looks(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Looks"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -282,19 +311,10 @@ class COMPOSITOR_MT_add_nodes_features_looks(CompositorAddMenu, bpy.types.Menu):
 	def draw(self, context):
 		version = bpy.app.version
 		layout = self.layout
-		self.operator_add_node(layout, "CompositorNodeAutoExposure")
-		self.operator_add_node(layout, "CompositorNodeSpotExposure")
-		self.operator_add_node(layout, "CompositorNodeCameraLensBlur")
-		self.operator_add_node(layout, "CompositorNodeSwingTilt")
-		self.operator_add_node(layout, "CompositorNodeChromaticAberration")
-		self.operator_add_node(layout, "CompositorNodeVignette")
-		self.operator_add_node(layout, "CompositorNodeEdgeSoftness")
-		self.operator_add_node(layout, "CompositorNodeShutterStreak")
 		self.operator_add_node(layout, "CompositorNodeHalation")
 		self.operator_add_node(layout, "CompositorNodePaintFilter")
 		self.operator_add_node(layout, "CompositorNodeBlurRGB")
 		self.operator_add_node(layout, "CompositorNodeTwitch")
-		self.operator_add_node(layout, "CompositorNodeRenoiser")
 
 class COMPOSITOR_MT_add_nodes_features_3d(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "3D"
@@ -366,12 +386,14 @@ classes = (
 	COMPOSITOR_MT_add_effects_transform,
 	COMPOSITOR_MT_add_effects_features,
 	COMPOSITOR_MT_add_effects_features_color,
+	COMPOSITOR_MT_add_effects_features_camera,
 	COMPOSITOR_MT_add_effects_features_looks,
 	COMPOSITOR_MT_add_effects_features_3d,
 	COMPOSITOR_MT_add_effects_features_other,
 	COMPOSITOR_MT_add_effects_presets,
 	COMPOSITOR_MT_add_nodes_features,
 	COMPOSITOR_MT_add_nodes_features_color,
+	COMPOSITOR_MT_add_nodes_features_camera,
 	COMPOSITOR_MT_add_nodes_features_looks,
 	COMPOSITOR_MT_add_nodes_features_3d,
 	COMPOSITOR_MT_add_nodes_features_other,

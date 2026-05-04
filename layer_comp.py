@@ -81,7 +81,8 @@ class Align_OT_Node_Tree(bpy.types.Operator):
 
 		if frame:
 			GroupOutput.location = (frame.location[0] + frame.width + 200, frame.location[1])
-			viewer_node.location = (GroupOutput.location[0], GroupOutput.location[1] + 250)
+			if viewer_node:
+				viewer_node.location = (GroupOutput.location[0], GroupOutput.location[1] + 250)
 			for node in node_group.nodes:
 				if node.type == "OUTPUT_FILE":
 					node.location = (GroupOutput.location[0], node.location[1])
