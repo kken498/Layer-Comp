@@ -204,6 +204,7 @@ class COMPOSITOR_MT_add_effects_features_camera(CompositorAddMenu, bpy.types.Men
 		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
 		self.operator_add_effect(layout, "CompositorNodeVignette")
 		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
+		self.operator_add_effect(layout, "CompositorNodeSwirlyDistortion")
 		self.operator_add_effect(layout, "CompositorNodeRadialBlur")
 		self.operator_add_effect(layout, "CompositorNodeRenoiser")
 
@@ -301,6 +302,7 @@ class COMPOSITOR_MT_add_nodes_features_camera(CompositorAddMenu, bpy.types.Menu)
 		self.operator_add_node(layout, "CompositorNodeChromaticAberration")
 		self.operator_add_node(layout, "CompositorNodeVignette")
 		self.operator_add_node(layout, "CompositorNodeEdgeSoftness")
+		self.operator_add_node(layout, "CompositorNodeSwirlyDistortion")
 		self.operator_add_node(layout, "CompositorNodeRadialBlur")
 		self.operator_add_node(layout, "CompositorNodeRenoiser")
 

@@ -710,17 +710,12 @@ class Duplicate_OT_Layer(bpy.types.Operator):
 		color_out_node = node_group.nodes.get(f"{layer.name}.color_out")
 		new_color_out_node = node_group.nodes.get(f"{new_layer.name}.color_out")
 
-		transform_node = node_group.nodes.get(f"{layer.name}.Transform")
-		new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
-
 		source_node = node_group.nodes.get(layer.name)
 		new_source_node = node_group.nodes.get(new_layer.name)
 
 		convert_node_data(mix_node, new_mix_node)
 		convert_node_data(color_in_node, new_color_in_node)
 		convert_node_data(color_out_node, new_color_out_node)
-		if transform_node:
-			convert_node_data(transform_node, new_transform_node)
 		if source_node and new_source_node:
 			convert_node_data(source_node, new_source_node)
 
@@ -831,17 +826,12 @@ class Copy_OT_Layer(bpy.types.Operator):
 			color_out_node = copy_node_group.nodes.get(f"{copy_layer.name}.color_out")
 			new_color_out_node = node_group.nodes.get(f"{new_layer.name}.color_out")
 
-			transform_node = copy_node_group.nodes.get(f"{copy_layer.name}.Transform")
-			new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
-
 			source_node = copy_node_group.nodes.get(copy_layer.name)
 			new_source_node = node_group.nodes.get(new_layer.name)
 
 			convert_node_data(mix_node, new_mix_node)
 			convert_node_data(color_in_node, new_color_in_node)
 			convert_node_data(color_out_node, new_color_out_node)
-			if transform_node:
-				convert_node_data(transform_node, new_transform_node)
 			if source_node and new_source_node:
 				convert_node_data(source_node, new_source_node)
 
@@ -872,14 +862,11 @@ class Copy_OT_Layer(bpy.types.Operator):
 
 				mix_node = copy_node_group.nodes.get(f"{copy_layer.name}.Mix")
 				new_mix_node = node_group.nodes.get(f"{new_layer.name}.Mix")
-				transform_node = copy_node_group.nodes.get(f"{copy_layer.name}.Transform")
-				new_transform_node = node_group.nodes.get(f"{new_layer.name}.Transform")
 
 				source_node = copy_node_group.nodes.get(copy_layer.name)
 				new_source_node = node_group.nodes.get(new_layer.name)
 
 				convert_node_data(mix_node, new_mix_node)
-				convert_node_data(transform_node, new_transform_node)
 				if source_node and new_source_node:
 					convert_node_data(source_node, new_source_node)
 

@@ -91,6 +91,8 @@ def get_filepath(type):
 	return blendfolder
 
 def convert_node_data(node, convert_node):
+	if not node:
+		return
 	if node.type not in ["IMAGE","TEXTURE"]:
 		for attr in node.bl_rna.properties.keys():
 			if attr not in ['name', 'location', 'location_absolute', 'parent']:

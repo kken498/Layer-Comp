@@ -107,10 +107,10 @@ feature_node_data['CompositorNodeCameraLensBlur'] = ['Camera Lens Blur', 'VIEW_C
 feature_node_data['CompositorNodeLensDirt'] = ['Lens Dirt', 'MOD_SCATTER_ON_SURFACE']
 feature_node_data['CompositorNodeSwingTilt'] = ['Swing-Tilt', 'AREA_SWAP']
 feature_node_data['CompositorNodeShutterStreak'] = ['Shutter Streak', 'CAMERA_STEREO']
-
 feature_node_data['CompositorNodeChromaticAberration'] = ['Chromatic Aberration', 'SEQ_CHROMA_SCOPE']
 feature_node_data['CompositorNodeVignette'] = ['Vignette', 'MOD_MASK']
 feature_node_data['CompositorNodeEdgeSoftness'] = ['Edge Softness', 'PROP_OFF']
+feature_node_data['CompositorNodeSwirlyDistortion'] = ['Swirly Distortion', 'FORCE_VORTEX']
 feature_node_data['CompositorNodeRadialBlur'] = ['Radial Blur', 'PHYSICS']
 
 feature_node_data['CompositorNodeHalation'] = ['Halation', 'SHADERFX']
