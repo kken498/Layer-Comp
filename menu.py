@@ -131,8 +131,6 @@ class COMPOSITOR_MT_add_effects_keying(CompositorAddMenu, bpy.types.Menu):
 
 	def draw(self, context):
 		layout = self.layout
-		self.operator_add_effect(layout, "CompositorNodeCryptomatte")
-		layout.separator()
 		self.operator_add_effect(layout, "CompositorNodeChannelMatte")
 		self.operator_add_effect(layout, "CompositorNodeChromaMatte")
 		self.operator_add_effect(layout, "CompositorNodeColorMatte")

@@ -3,8 +3,17 @@ import re
 import os
 
 def get_addon_preference(context):
-	addon_prefs = context.preferences.addons[__package__].preferences
+	addon_prefs = context.preferences.addons[__name__.partition('.')[0]].preferences
 	return addon_prefs
+
+def get_version():
+	manifest_path = os.path.join(os.path.dirname(__file__), 'blender_manifest.toml')
+	with open(manifest_path, 'r') as f:
+		content = f.read()
+	match = re.search(r'(?<!schema_)\bversion\s*=\s*["\']([^"\']+)["\']', content)	
+	if match:
+		return match.group(1)
+	return None
 
 def offset_node(node_group, offset_node, type, offset):
 	for node in node_group.nodes:

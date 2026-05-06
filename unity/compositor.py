@@ -33,6 +33,8 @@ class Compositor_Props(bpy.types.PropertyGroup):
 
 	layer : bpy.props.CollectionProperty(name = "Layer", type=Layer_Props)
 	layer_index: bpy.props.IntProperty(name = "Layer")
+
+	version : bpy.props.StringProperty(name = "Version", default=get_version())
 	
 class New_OT_Compositor(bpy.types.Operator):
 	bl_idname = "scene.comp_new_compositor"
@@ -58,6 +60,7 @@ class New_OT_Compositor(bpy.types.Operator):
 		item = node_group.compositor_props
 		item.sub_name = node_group.name
 		item.name = node_group.name
+		item.version = get_version()
 
 		GroupInput = node_group.nodes.new("NodeGroupInput")
 		GroupInput.location[0] = -900

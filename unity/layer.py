@@ -1229,13 +1229,14 @@ class COMPOSITOR_MT_layers_specials(bpy.types.Menu):
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		tree = get_scene_tree(context)
 		props = context.scene.compositor_layer_props
 
 		node_group = bpy.data.node_groups[props.compositor_panel]
 		compositor = node_group.compositor_props
 
 		layout = self.layout
+		layout.label(text=f"Compositor Version: {compositor.version}", icon = "NODE_COMPOSITING")
+		layout.separator()
 		layout.operator("wm.call_menu", text="Add Layer", icon='ADD').name = "COMPOSITOR_MT_add_layer"
 		if len(compositor.layer) > 0:
 			layout.operator("wm.call_menu", text="Add Effect", icon='SHADERFX').name = "COMPOSITOR_MT_add_effects"
