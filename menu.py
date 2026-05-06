@@ -160,7 +160,6 @@ class COMPOSITOR_MT_add_effects_features(CompositorAddMenu, bpy.types.Menu):
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		version = bpy.app.version
 		layout = self.layout
 		layout.menu("COMPOSITOR_MT_add_effects_features_color")
 		layout.menu("COMPOSITOR_MT_add_effects_features_looks")
@@ -179,9 +178,9 @@ class COMPOSITOR_MT_add_effects_features_color(CompositorAddMenu, bpy.types.Menu
 		self.operator_add_effect(layout, "CompositorNodeColorReplace")
 		self.operator_add_effect(layout, "CompositorNodeColorInnerShadow")
 		self.operator_add_effect(layout, "CompositorNodeColorInnerShadowSingle")
-		self.operator_add_effect(layout, "CompositorNodeColorRimLight")
 		self.operator_add_effect(layout, "CompositorNodeDropShadow")
 		self.operator_add_effect(layout, "CompositorNodeInnerShadow")
+		self.operator_add_effect(layout, "CompositorNodeColorRimLight")
 		self.operator_add_effect(layout, "CompositorNodeOuterGlow")
 		self.operator_add_effect(layout, "CompositorNodeBoundaryLine")
 		self.operator_add_effect(layout, "CompositorNodeUnmult")
@@ -196,28 +195,27 @@ class COMPOSITOR_MT_add_effects_features_camera(CompositorAddMenu, bpy.types.Men
 		self.operator_add_effect(layout, "CompositorNodeAutoExposure")
 		self.operator_add_effect(layout, "CompositorNodeSpotExposure")
 		self.operator_add_effect(layout, "CompositorNodeCameraLensBlur")
-		self.operator_add_effect(layout, "CompositorNodeLensDirt")
 		self.operator_add_effect(layout, "CompositorNodeSwingTilt")
-		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
-		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
-		self.operator_add_effect(layout, "CompositorNodeVignette")
 		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness")
-		self.operator_add_effect(layout, "CompositorNodeSwirlyDistortion")
-		self.operator_add_effect(layout, "CompositorNodeRadialBlur")
+		self.operator_add_effect(layout, "CompositorNodeEdgeSoftness(Bokeh)")
+		self.operator_add_effect(layout, "CompositorNodeVignette")
+		self.operator_add_effect(layout, "CompositorNodeChromaticAberration")
+		self.operator_add_effect(layout, "CompositorNodeLensDirt")
+		self.operator_add_effect(layout, "CompositorNodeShutterStreak")
 		self.operator_add_effect(layout, "CompositorNodeRenoiser")
-
+		self.operator_add_effect(layout, "CompositorNodeRadialBlur")
+		self.operator_add_effect(layout, "CompositorNodeSwirlyDistortion")
+		
 class COMPOSITOR_MT_add_effects_features_looks(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Looks"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		version = bpy.app.version
 		layout = self.layout
 		self.operator_add_effect(layout, "CompositorNodeHalation")
 		self.operator_add_effect(layout, "CompositorNodePaintFilter")
 		self.operator_add_effect(layout, "CompositorNodeBlurRGB")
-		self.operator_add_effect(layout, "CompositorNodeTwitch")
-
+		
 class COMPOSITOR_MT_add_effects_features_3d(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "3D"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
@@ -236,6 +234,7 @@ class COMPOSITOR_MT_add_effects_features_other(CompositorAddMenu, bpy.types.Menu
 		layout = self.layout
 		self.operator_add_effect(layout, "CompositorNodeWiggleTransfrom")
 		self.operator_add_effect(layout, "CompositorNodeTile")
+		self.operator_add_effect(layout, "CompositorNodeTwitch")
 
 class COMPOSITOR_MT_add_effects_presets(bpy.types.Menu):
 	bl_label = "Presets"
@@ -257,7 +256,6 @@ class COMPOSITOR_MT_add_nodes_features(CompositorAddMenu, bpy.types.Menu):
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		version = bpy.app.version
 		layout = self.layout
 		layout.menu("COMPOSITOR_MT_add_nodes_features_color")
 		layout.menu("COMPOSITOR_MT_add_nodes_features_camera")
@@ -277,9 +275,9 @@ class COMPOSITOR_MT_add_nodes_features_color(CompositorAddMenu, bpy.types.Menu):
 		self.operator_add_node(layout, "CompositorNodeColorReplace")
 		self.operator_add_node(layout, "CompositorNodeColorInnerShadow")
 		self.operator_add_node(layout, "CompositorNodeColorInnerShadowSingle")
-		self.operator_add_node(layout, "CompositorNodeColorRimLight")
 		self.operator_add_node(layout, "CompositorNodeDropShadow")
 		self.operator_add_node(layout, "CompositorNodeInnerShadow")
+		self.operator_add_node(layout, "CompositorNodeColorRimLight")
 		self.operator_add_node(layout, "CompositorNodeOuterGlow")
 		self.operator_add_node(layout, "CompositorNodeBoundaryLine")
 		self.operator_add_node(layout, "CompositorNodeUnmult")
@@ -294,27 +292,26 @@ class COMPOSITOR_MT_add_nodes_features_camera(CompositorAddMenu, bpy.types.Menu)
 		self.operator_add_node(layout, "CompositorNodeAutoExposure")
 		self.operator_add_node(layout, "CompositorNodeSpotExposure")
 		self.operator_add_node(layout, "CompositorNodeCameraLensBlur")
-		self.operator_add_node(layout, "CompositorNodeLensDirt")
 		self.operator_add_node(layout, "CompositorNodeSwingTilt")
-		self.operator_add_node(layout, "CompositorNodeShutterStreak")
 		self.operator_add_node(layout, "CompositorNodeChromaticAberration")
 		self.operator_add_node(layout, "CompositorNodeVignette")
 		self.operator_add_node(layout, "CompositorNodeEdgeSoftness")
-		self.operator_add_node(layout, "CompositorNodeSwirlyDistortion")
-		self.operator_add_node(layout, "CompositorNodeRadialBlur")
+		self.operator_add_node(layout, "CompositorNodeEdgeSoftness(Bokeh)")
+		self.operator_add_node(layout, "CompositorNodeLensDirt")
+		self.operator_add_node(layout, "CompositorNodeShutterStreak")
 		self.operator_add_node(layout, "CompositorNodeRenoiser")
+		self.operator_add_node(layout, "CompositorNodeRadialBlur")
+		self.operator_add_node(layout, "CompositorNodeSwirlyDistortion")
 
 class COMPOSITOR_MT_add_nodes_features_looks(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "Looks"
 	bl_options = {'SEARCH_ON_KEY_PRESS'}
 
 	def draw(self, context):
-		version = bpy.app.version
 		layout = self.layout
 		self.operator_add_node(layout, "CompositorNodeHalation")
 		self.operator_add_node(layout, "CompositorNodePaintFilter")
 		self.operator_add_node(layout, "CompositorNodeBlurRGB")
-		self.operator_add_node(layout, "CompositorNodeTwitch")
 
 class COMPOSITOR_MT_add_nodes_features_3d(CompositorAddMenu, bpy.types.Menu):
 	bl_label = "3D"
@@ -334,6 +331,7 @@ class COMPOSITOR_MT_add_nodes_features_other(CompositorAddMenu, bpy.types.Menu):
 		layout = self.layout
 		self.operator_add_node(layout, "CompositorNodeWiggleTransfrom")
 		self.operator_add_node(layout, "CompositorNodeTile")
+		self.operator_add_node(layout, "CompositorNodeTwitch")
 
 class COMPOSITOR_MT_add_nodes_presets(bpy.types.Menu):
 	bl_label = "Presets"

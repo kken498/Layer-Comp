@@ -89,6 +89,8 @@ texture_node_data['ShaderNodeTexWave'] = ['Wave Texture', 'TEXTURE']
 texture_node_data['ShaderNodeTexWhiteNoise'] = ['White Noise Texture', 'TEXTURE']
 
 feature_node_data = {}
+
+#Color
 feature_node_data['CompositorNodeFill'] = ['Fill', 'SNAP_FACE']
 feature_node_data['CompositorNodeSpotFill'] = ['Spot Fill', 'SURFACE_NCIRCLE']
 feature_node_data['CompositorNodeColorSelection'] = ['ColorSelection', 'VIS_SEL_11']
@@ -100,30 +102,39 @@ feature_node_data['CompositorNodeInnerShadow'] = ['InnerShadow', 'SELECT_INTERSE
 feature_node_data['CompositorNodeColorRimLight'] = ['Color Rim Light', 'LIGHT_AREA']
 feature_node_data['CompositorNodeOuterGlow'] = ['Outer Glow', 'LIGHT_SUN']
 feature_node_data['CompositorNodeBoundaryLine'] = ['BoundaryLine', 'MOD_LINEART']
-feature_node_data['CompositorNodePaintFilter'] = ['Paint Filter', 'BRUSHES_ALL']
+feature_node_data['CompositorNodeUnmult'] = ['Unmult', 'MOD_UVPROJECT']
+feature_node_data['CompositorNodeSeparateRGBA'] = ['Separate RGBA', 'PARTICLES']
+
+#Camera
 feature_node_data['CompositorNodeAutoExposure'] = ['Auto Exposure', 'SORTBYEXT']
 feature_node_data['CompositorNodeSpotExposure'] = ['Spot Exposure', 'LIGHT_SPOT']
 feature_node_data['CompositorNodeCameraLensBlur'] = ['Camera Lens Blur', 'VIEW_CAMERA']
-feature_node_data['CompositorNodeLensDirt'] = ['Lens Dirt', 'MOD_SCATTER_ON_SURFACE']
 feature_node_data['CompositorNodeSwingTilt'] = ['Swing-Tilt', 'AREA_SWAP']
-feature_node_data['CompositorNodeShutterStreak'] = ['Shutter Streak', 'CAMERA_STEREO']
-feature_node_data['CompositorNodeChromaticAberration'] = ['Chromatic Aberration', 'SEQ_CHROMA_SCOPE']
-feature_node_data['CompositorNodeVignette'] = ['Vignette', 'MOD_MASK']
 feature_node_data['CompositorNodeEdgeSoftness'] = ['Edge Softness', 'PROP_OFF']
-feature_node_data['CompositorNodeSwirlyDistortion'] = ['Swirly Distortion', 'FORCE_VORTEX']
+feature_node_data['CompositorNodeEdgeSoftness(Bokeh)'] = ['Edge Softness(Bokeh)', 'PROP_OFF']
+feature_node_data['CompositorNodeVignette'] = ['Vignette', 'MOD_MASK']
+feature_node_data['CompositorNodeChromaticAberration'] = ['Chromatic Aberration', 'SEQ_CHROMA_SCOPE']
+feature_node_data['CompositorNodeLensDirt'] = ['Lens Dirt', 'MOD_SCATTER_ON_SURFACE']
+feature_node_data['CompositorNodeShutterStreak'] = ['Shutter Streak', 'CAMERA_STEREO']
+feature_node_data['CompositorNodeRenoiser'] = ['Renoiser', 'TEXTURE']
 feature_node_data['CompositorNodeRadialBlur'] = ['Radial Blur', 'PHYSICS']
+feature_node_data['CompositorNodeSwirlyDistortion'] = ['Swirly Distortion', 'FORCE_VORTEX']
 
+#Looks
 feature_node_data['CompositorNodeHalation'] = ['Halation', 'SHADERFX']
+feature_node_data['CompositorNodePaintFilter'] = ['Paint Filter', 'BRUSHES_ALL']
+feature_node_data['CompositorNodeBlurRGB'] = ['Blur RGB', 'PROP_CON']
+
+
+#3D
 feature_node_data['CompositorNodeRelight'] = ['Relight', 'LIGHT_POINT']
 feature_node_data['CompositorNodeRimLight'] = ['Rim Light', 'LIGHT_AREA']
 feature_node_data['CompositorNodeSceneRimLight'] = ['Scene Rim Light', 'LIGHT_SUN']
-feature_node_data['CompositorNodeBlurRGB'] = ['Blur RGB', 'PROP_CON']
-feature_node_data['CompositorNodeTwitch'] = ['Twitch', 'GHOST_ENABLED']
-feature_node_data['CompositorNodeRenoiser'] = ['Renoiser', 'TEXTURE']
-feature_node_data['CompositorNodeSeparateRGBA'] = ['Separate RGBA', 'PARTICLES']
-feature_node_data['CompositorNodeUnmult'] = ['Unmult', 'MOD_UVPROJECT']
+
+#Others
 feature_node_data['CompositorNodeWiggleTransfrom'] = ['Wiggle Transfrom', 'CON_ROTLIKE']
 feature_node_data['CompositorNodeTile'] = ['Tile', 'SNAP_VERTEX']
+feature_node_data['CompositorNodeTwitch'] = ['Twitch', 'GHOST_ENABLED']
 
 socket_data = {}
 socket_data['RGBA'] = 'NODE_SOCKET_RGBA'
