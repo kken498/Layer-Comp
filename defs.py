@@ -3,7 +3,7 @@ import re
 import os
 
 def get_addon_preference(context):
-	addon_prefs = context.preferences.addons[__name__.partition('.')[0]].preferences
+	addon_prefs = context.preferences.addons[__package__].preferences
 	return addon_prefs
 
 def get_version():
