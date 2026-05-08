@@ -174,6 +174,8 @@ class COMPOSITOR_MT_add_effects_features_color(CompositorAddMenu, bpy.types.Menu
 		layout = self.layout
 		self.operator_add_effect(layout, "CompositorNodeFill")
 		self.operator_add_effect(layout, "CompositorNodeSpotFill")
+		self.operator_add_effect(layout, "CompositorNodeGradientRamp")
+		self.operator_add_effect(layout, "CompositorNode4ColorGradient")
 		self.operator_add_effect(layout, "CompositorNodeColorSelection")
 		self.operator_add_effect(layout, "CompositorNodeColorReplace")
 		self.operator_add_effect(layout, "CompositorNodeColorInnerShadow")
@@ -271,6 +273,8 @@ class COMPOSITOR_MT_add_nodes_features_color(CompositorAddMenu, bpy.types.Menu):
 		layout = self.layout
 		self.operator_add_node(layout, "CompositorNodeFill")
 		self.operator_add_node(layout, "CompositorNodeSpotFill")
+		self.operator_add_node(layout, "CompositorNodeGradientRamp")
+		self.operator_add_node(layout, "CompositorNode4ColorGradient")
 		self.operator_add_node(layout, "CompositorNodeColorSelection")
 		self.operator_add_node(layout, "CompositorNodeColorReplace")
 		self.operator_add_node(layout, "CompositorNodeColorInnerShadow")

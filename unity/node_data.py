@@ -93,6 +93,8 @@ feature_node_data = {}
 #Color
 feature_node_data['CompositorNodeFill'] = ['Fill', 'SNAP_FACE']
 feature_node_data['CompositorNodeSpotFill'] = ['Spot Fill', 'SURFACE_NCIRCLE']
+feature_node_data['CompositorNodeGradientRamp'] = ['Gradient Ramp', 'NODE_TEXTURE']
+feature_node_data['CompositorNode4ColorGradient'] = ['4 Color Gradient', 'GEOMETRY_NODES']
 feature_node_data['CompositorNodeColorSelection'] = ['ColorSelection', 'VIS_SEL_11']
 feature_node_data['CompositorNodeColorReplace'] = ['ColorReplace', 'OVERLAY']
 feature_node_data['CompositorNodeColorInnerShadow'] = ['Color InnerShadow', 'ANTIALIASED']
