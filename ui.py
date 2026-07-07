@@ -155,6 +155,8 @@ class IMAGE_PT_Compositor_Layer(bpy.types.Panel, Compositor_Layer):
 
 	@classmethod
 	def poll(cls, context):
+		if context.space_data.image is None:
+			return False
 		if context.space_data.image.name in ['Render Result', 'Viewer Node']:
 			return True
 		return False
